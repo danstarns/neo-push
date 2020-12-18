@@ -4,32 +4,32 @@ Example blog site build with `@neo4j/graphql` & React.js.
 
 ```graphql
 type User {
-  id: ID!
-  email: String!
-  createdBlogs: [Blog] @relationship(type: "HAS_BLOG", direction: "OUT")
-	authorsBlogs: [Blog] @relationship(type: "CAN_POST", direction: "OUT")
+    id: ID!
+    email: String!
+    createdBlogs: [Blog] @relationship(type: "HAS_BLOG", direction: "OUT")
+    authorsBlogs: [Blog] @relationship(type: "CAN_POST", direction: "OUT")
 }
 
 type Blog {
-	id: ID!
-  name: String!
-	creator: User @relationship(type: "HAS_BLOG", direction: "IN")
-	authors: [User] @relationship(type: "CAN_POST", direction: "IN")
-  posts: [Post] @relationship(type: "HAS_POST", direction: "OUT")
+    id: ID!
+    name: String!
+    creator: User @relationship(type: "HAS_BLOG", direction: "IN")
+    authors: [User] @relationship(type: "CAN_POST", direction: "IN")
+    posts: [Post] @relationship(type: "HAS_POST", direction: "OUT")
 }
 
 type Post {
-	id: ID!
-	title: String!
-	blog: Blog @relationship(type: "HAS_POST", direction: "IN")
-  comments: [Comment] @relationship(type: "HAS_COMMENT", direction: "IN")
-  author: User @relationship(type: "WROTE", direction: "IN")
+    id: ID!
+    title: String!
+    blog: Blog @relationship(type: "HAS_POST", direction: "IN")
+    comments: [Comment] @relationship(type: "HAS_COMMENT", direction: "IN")
+    author: User @relationship(type: "WROTE", direction: "IN")
 }
 
 type Comment {
-  id: ID!
-  author: User @relationship(type: "COMMENTED", direction: "OUT")
-  post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
+    id: ID!
+    author: User @relationship(type: "COMMENTED", direction: "OUT")
+    post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
 }
 ```
 
