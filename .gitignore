@@ -1,0 +1,4 @@
+node_modules
+./packages/client/web-dist
+./packages/server/dist
+.env
