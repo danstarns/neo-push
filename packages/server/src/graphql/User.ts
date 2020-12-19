@@ -29,18 +29,18 @@ async function signUp(_root, args: { email: string; password: string; }, context
 async function signIn(_root, args: { email: string; password: string; }, context: Context) {
     const User = context.neoSchema.model("User");
 
-    const user = await User.find({ where: { email: args.email } });
+    const [user] = await User.find({ where: { email: args.email } });
 
     if (!user) {
         throw new Error("user not found");
     }
 
-    const equal = comparePassword(args.password, user.password);
+    const equal = await comparePassword(args.password, user.password);
     if (!equal) {
         throw new Error("Unauthorized");
     }
 
-    const jwt = createJWT({ sub: user.id });
+    const jwt = await createJWT({ sub: user.id });
 
     return jwt;
 };
