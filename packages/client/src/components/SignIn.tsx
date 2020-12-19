@@ -16,7 +16,6 @@ function SignIn() {
     const history = useHistory();
     const { isLoggedIn, getSetValue } = useContext(auth.Context);
     const { mutate } = useContext(graphql.Context);
-
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState(null);

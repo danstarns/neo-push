@@ -1,9 +1,11 @@
 import {
     faUserPlus,
-    faSignInAlt
+    faSignInAlt,
+    faSignOutAlt
 } from "@fortawesome/free-solid-svg-icons";
 
 export default [
     faUserPlus,
-    faSignInAlt
+    faSignInAlt,
+    faSignOutAlt
 ];

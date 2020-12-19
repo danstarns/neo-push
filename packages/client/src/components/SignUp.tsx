@@ -23,7 +23,7 @@ function SignUp() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (password !== passwordConfirm) {
+        if ((password && passwordConfirm) && (password !== passwordConfirm)) {
             setError("Passwords do not match");
         } else {
             setError(null);
