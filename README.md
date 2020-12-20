@@ -29,6 +29,7 @@ type Post {
 type Comment {
     id: ID!
     author: User @relationship(type: "COMMENTED", direction: "OUT")
+    content: String!
     post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
 }
 ```

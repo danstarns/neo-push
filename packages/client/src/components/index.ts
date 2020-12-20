@@ -5,3 +5,5 @@ export { default as SignIn } from "./SignIn";
 export { default as Dashboard } from "./Dashboard";
 export { default as Logout } from "./Logout";
 export { default as Protected } from "./Protected";
+export { default as Blog } from "./Blog";
+export { default as Post } from "./Post";

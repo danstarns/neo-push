@@ -1,8 +1,5 @@
-import React, { useContext } from 'react';
+import React from 'react';
 import { Card, Row, Container } from "react-bootstrap";
-import { useHistory } from "react-router-dom";
-import { auth } from "../contexts";
-import constants from "../constants";
 import * as markdown from "./Markdown";
 
 const content = `
@@ -37,6 +34,7 @@ type Post {
 type Comment {
     id: ID!
     author: User @relationship(type: "COMMENTED", direction: "OUT")
+    content: String!
     post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
 }
 \`\`\`
@@ -77,17 +75,10 @@ Each package contains a \`./env.example\` file. Copy this file, to the same dire
 
 
 function Home() {
-    const { isLoggedIn } = useContext(auth.Context);
-    const history = useHistory();
-
-    if (isLoggedIn) {
-        history.push(constants.DASHBOARD_PAGE);
-    }
-
     return (
         <Container>
-            <div>
-                <Row className="p-2">
+            <div className="p-3">
+                <Row>
                     <Card className="m-0 p-3">
                         <markdown.Render markdown={content} />
                     </Card>
