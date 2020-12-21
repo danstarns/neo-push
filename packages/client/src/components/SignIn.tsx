@@ -1,16 +1,10 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
 import { Form, Button, Card, Row, Alert, Spinner, Container } from "react-bootstrap";
 import { auth, graphql } from "../contexts";
-import gql from "graphql-tag";
 import { useHistory } from "react-router-dom";
 import constants from "../constants";
 import * as config from "../../config";
-
-const SIGNIN = gql`
-     mutation signIn($email: String! $password: String!){
-        signIn(email: $email, password: $password)
-    }
-`;
+import { SIGNIN } from "../queries";
 
 function SignIn() {
     const history = useHistory();
@@ -83,10 +77,10 @@ function SignIn() {
                         </Form.Group>
                         <Button block variant="outline-secondary" onClick={() => history.push(constants.SIGN_UP_PAGE)}>
                             Sign Up
-                    </Button>
+                        </Button>
                         <Button className="mt-3" variant="primary" type="submit">
                             Sign In
-                    </Button>
+                         </Button>
                         {loading && <div className="d-flex flex-column align-items-center">
                             <Spinner className="mt-5" animation="border" />
                         </div>}

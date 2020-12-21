@@ -1,11 +1,9 @@
 import React, { useContext } from "react";
-import { Navbar, Nav, Card, NavDropdown } from "react-bootstrap";
+import { Navbar, Nav, Card } from "react-bootstrap";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import constants from "../constants";
-import { useHistory } from "react-router-dom";
 import { auth } from "../contexts";
-
 
 const navStyles = {
   signOutIcon: {

@@ -1,16 +1,10 @@
 import React, { useState, useContext, useCallback, useEffect } from "react";
 import { Form, Button, Card, Row, Alert, Spinner, Container } from "react-bootstrap";
 import { auth, graphql } from "../contexts";
-import gql from "graphql-tag";
 import { useHistory } from "react-router-dom";
 import * as config from "../../config";
 import constants from "../constants";
-
-const SIGNUP = gql`
-    mutation signUp($email: String! $password: String!){
-        signUp(email: $email, password: $password)
-    }
-`;
+import { SIGNUP } from "../queries";
 
 function SignUp() {
     const history = useHistory();

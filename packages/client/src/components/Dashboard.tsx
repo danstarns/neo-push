@@ -1,17 +1,9 @@
 import React, { useState, useContext, useEffect } from "react";
 import { Alert, Spinner, Container, Card, Row, Col, Button } from "react-bootstrap";
 import { auth, graphql } from "../contexts";
-import gql from "graphql-tag";
 import constants from "../constants";
-import { Link } from "react-router-dom";
-
-const USERS = gql`
-    query user($id: ID) {
-        Users(where: {id: $id}){
-            email
-        }
-    }
-`;
+import { Link } from "react-router-dom" ;
+import { USER } from "../queries";
 
 const blogs = [
     { id: "2", name: "My Blog" },
@@ -48,7 +40,7 @@ function Dashboard() {
         (async () => {
             try {
                 const response = await query({
-                    query: USERS,
+                    query: USER,
                     variables: { id: getId() },
                 });
 
