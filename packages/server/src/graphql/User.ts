@@ -1,8 +1,13 @@
 import { Context } from "../types";
 import { v4 as uuid } from "uuid";
 import { comparePassword, createJWT, hashPassword } from "../utils";
+import gql from "graphql-tag";
 
-async function signUp(_root, args: { email: string; password: string; }, context: Context) {
+async function signUp(
+    _root,
+    args: { email: string; password: string },
+    context: Context
+) {
     const User = context.neoSchema.model("User");
 
     const [existing] = await User.find({ where: { email: args.email } });
@@ -14,19 +19,25 @@ async function signUp(_root, args: { email: string; password: string; }, context
     const hash = await hashPassword(args.password);
 
     const [user] = await User.create({
-        input: [{
-            id: uuid(),
-            email: args.email,
-            password: hash
-        }]
+        input: [
+            {
+                id: uuid(),
+                email: args.email,
+                password: hash,
+            },
+        ],
     });
 
     const jwt = createJWT({ sub: user.id });
 
     return jwt;
-};
+}
 
-async function signIn(_root, args: { email: string; password: string; }, context: Context) {
+async function signIn(
+    _root,
+    args: { email: string; password: string },
+    context: Context
+) {
     const User = context.neoSchema.model("User");
 
     const [user] = await User.find({ where: { email: args.email } });
@@ -43,9 +54,9 @@ async function signIn(_root, args: { email: string; password: string; }, context
     const jwt = await createJWT({ sub: user.id });
 
     return jwt;
-};
+}
 
-export const typeDefs = `
+export const typeDefs = gql`
     type User {
         id: ID!
         email: String!
@@ -62,5 +73,5 @@ export const resolvers = {
     Mutation: {
         signUp,
         signIn,
-    }
+    },
 };
