@@ -35,7 +35,7 @@ class Code extends React.PureComponent {
     }
 }
 
-export function Render(props: { markdown: string; }) {
+export function Render(props: { markdown: string }) {
     return (
         <ReactMarkdown
             className="markdown-component"

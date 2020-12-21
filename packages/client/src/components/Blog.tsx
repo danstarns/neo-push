@@ -38,43 +38,43 @@ function Blog() {
     });
 
     return (
-        <Container>
-            <Card className="mt-3 p-3">
-                <h1>{blog.name}</h1>
-                <p className="text-muted">- {blog.creator.email}</p>
-                {(blog.isCreator || blog.isAuthor) &&
-                    <>
-                        <hr />
-                        <div className="d-flex justify-content-start">
-                            <Button variant="outline-primary">
-                                Create Post
-                            </Button>
-                            {blog.isCreator &&
-                                <>
-                                    <Button className="ml-3" variant="outline-info">
-                                        Admin
-                                    </Button>
-                                    <Button className="ml-3" variant="outline-danger">
-                                        Delete
-                                    </Button>
-                                </>
-                            }
-
-                        </div>
-                    </>
-                }
-            </Card>
-
-            <Card className="mt-3 p-3 mb-3">
-                <h2>Posts</h2>
-                <Row>
-                    {posts.map((post) => <PostItem post={post}></PostItem>)}
-                </Row>
-                <div className="d-flex justify-content-center w-100">
-                    <Button>Load More</Button>
-                </div>
-            </Card>
-        </Container>
+        <>
+            <Container>
+                <Card className="mt-3 p-3">
+                    <h1>{blog.name}</h1>
+                    <p className="text-muted">- {blog.creator.email}</p>
+                    {(blog.isCreator || blog.isAuthor) &&
+                        <>
+                            <hr />
+                            <div className="d-flex justify-content-start">
+                                <Button variant="outline-primary">
+                                    Create Post
+                                </Button>
+                                {blog.isCreator &&
+                                    <>
+                                        <Button className="ml-3" variant="outline-info">
+                                            Admin
+                                        </Button>
+                                        <Button className="ml-3" variant="outline-danger">
+                                            Delete
+                                        </Button>
+                                    </>
+                                }
+                            </div>
+                        </>
+                    }
+                </Card>
+                <Card className="mt-3 p-3 mb-3">
+                    <h2>Posts</h2>
+                    <Row>
+                        {posts.map((post) => <PostItem post={post}></PostItem>)}
+                    </Row>
+                    <div className="d-flex justify-content-center w-100">
+                        <Button>Load More</Button>
+                    </div>
+                </Card>
+            </Container>
+        </>
     );
 };
 
