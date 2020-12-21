@@ -67,6 +67,7 @@ function CreateComment({
                         id: post,
                     },
                 });
+                setContent("");
             } catch (e) {
                 setError(e.message);
             }
@@ -87,27 +88,25 @@ function CreateComment({
     }
 
     return (
-        <Card className="mt-3 p-3">
-            <Form onSubmit={submit}>
-                <div className="mb-3">
-                    <markdown.Editor
-                        markdown={content}
-                        onChange={(mk: string) => setContent(mk)}
-                    ></markdown.Editor>
-                </div>
+        <Form onSubmit={submit}>
+            <div className="mb-3">
+                <markdown.Editor
+                    markdown={content}
+                    onChange={(mk: string) => setContent(mk)}
+                ></markdown.Editor>
+            </div>
 
-                {error && (
-                    <Alert variant="danger text-center" className="mt-3">
-                        {error}
-                    </Alert>
-                )}
-                <div className="d-flex justify-content-end">
-                    <Button variant="primary" type="submit" className="ml-2">
-                        Submit
-                    </Button>
-                </div>
-            </Form>
-        </Card>
+            {error && (
+                <Alert variant="danger text-center" className="mt-3">
+                    {error}
+                </Alert>
+            )}
+            <div className="d-flex justify-content-end">
+                <Button variant="primary" type="submit" className="ml-2">
+                    Submit
+                </Button>
+            </div>
+        </Form>
     );
 }
 
@@ -169,7 +168,7 @@ function PostComments({
     }
 
     return (
-        <Card className="mt-3 p-3">
+        <>
             <h2>Comments</h2>
             {comments.map((comment) => (
                 <CommentItem key={comment.id} comment={comment}></CommentItem>
@@ -177,7 +176,7 @@ function PostComments({
             <div className="d-flex justify-content-center w-100 mt-3">
                 <Button>Load More</Button>
             </div>
-        </Card>
+        </>
     );
 }
 
@@ -252,12 +251,14 @@ function Post() {
                     comments={comments}
                 />
 
-                <CreateComment
-                    post={post.id}
-                    onCreate={(comment) => {
-                        setComments((c) => [...c, comment]);
-                    }}
-                ></CreateComment>
+                <div className="pt-3">
+                    <CreateComment
+                        post={post.id}
+                        onCreate={(comment) => {
+                            setComments((c) => [...c, comment]);
+                        }}
+                    ></CreateComment>
+                </div>
             </Card>
         </Container>
     );
