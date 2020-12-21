@@ -6,6 +6,7 @@ export const typeDefs = gql`
         title: String!
         content: String!
         blog: Blog @relationship(type: "HAS_POST", direction: "IN")
+        comments: [Comment] @relationship(type: "HAS_COMMENT", direction: "IN")
         author: User @relationship(type: "WROTE", direction: "IN")
     }
 `;

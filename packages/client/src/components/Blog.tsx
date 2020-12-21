@@ -151,6 +151,10 @@ function BlogPosts({ blog }: { blog: string }) {
         </Card>;
     }
 
+    if (!posts.length) {
+        return <></>;
+    }
+
     return (
         <Card className="mt-3 p-3">
             <h2>Posts</h2>

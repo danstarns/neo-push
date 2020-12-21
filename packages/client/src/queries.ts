@@ -123,3 +123,42 @@ export const BLOG_POSTS = gql`
         }
     }
 `;
+
+export const COMMENT_ON_POST = gql`
+    mutation commentOnPost($post: ID, $content: String!, $user: ID) {
+        commentOnPost: updatePosts(
+            where: { id: $post }
+            create: {
+                comments: [
+                    {
+                        content: $content
+                        author: { connect: { where: { id: $user } } }
+                    }
+                ]
+            }
+        ) {
+            id
+            content
+            author {
+                id
+                email
+            }
+        }
+    }
+`;
+
+export const POST_COMMENTS = gql`
+    query postComments($post: ID, $skip: Int, $limit: Int) {
+        postComments: Comments(
+            where: { post: { id: $post } }
+            options: { skip: $skip, limit: $limit, sort: id_ASC }
+        ) {
+            id
+            author {
+                id
+                email
+            }
+            content
+        }
+    }
+`;
