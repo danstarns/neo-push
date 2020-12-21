@@ -1,44 +1,18 @@
-import React, { useState } from 'react';
-import { Alert, Spinner, Container, Card, Row, Col, Button } from "react-bootstrap";
+import React, { useState, useContext, useEffect, useCallback } from "react";
+import {
+    Alert,
+    Spinner,
+    Container,
+    Card,
+    Row,
+    Col,
+    Button,
+} from "react-bootstrap";
 import * as markdown from "./Markdown";
-
-const content = `
-# neo-push
-
-Example blog site build with \`@neo4j/graphql\` & React.js;
-
-## Getting Started
-Clone the repo;
-\`\`\`
-$ git clone git@github.com:danstarns/neo-push.git
-\`\`\`
-
-Enter the repo and install deps(lerna will install client and server);
-\`\`\`
-$ cd neo-push && npm ci
-\`\`\`
-
-[Configure environment variables](#how-to-configure-environment-variables)
-
-Run the client on;
-
-\`\`\`
-$ npm run client:dev
-\`\`\`
-
-Run the server on;
-\`\`\`
-$ npm run server:dev
-\`\`\`
-
-Navigate to http://localhost:4000 and sign up! 
-
-### FAQ
-
-#### How to configure environment variables.
-Each package contains a \`./env.example\` file. Copy this file, to the same directory, at \`./.env\` and adjust configuration to suit your local machine IE point to your neo4j database.
-`;
-
+import { POST } from "../queries";
+import { graphql, auth } from "../contexts";
+import { useParams, useHistory } from "react-router-dom";
+import constants from "../constants";
 
 const comments = [
     {
@@ -47,14 +21,16 @@ const comments = [
         user: {
             email: "danielstarns@hotmail.com",
         },
-        createdAt: new Date().toISOString()
-    }
+        createdAt: new Date().toISOString(),
+    },
 ];
 
-function CommentItem(props: { comment: any; }) {
+function CommentItem(props: { comment: any }) {
     return (
         <Card className="mt-3 p-3">
-            <p className="text-muted">- {props.comment.user.email} at {props.comment.createdAt}</p>
+            <p className="text-muted">
+                - {props.comment.user.email} at {props.comment.createdAt}
+            </p>
             <div className="p-3">
                 <markdown.Render markdown={props.comment.content} />
             </div>
@@ -63,14 +39,53 @@ function CommentItem(props: { comment: any; }) {
 }
 
 function Post() {
-    const [isAuthor] = useState(true);
+    const { id } = useParams<{ id: string }>();
+    const history = useHistory();
+    const [post, setPost] = useState<{
+        id?: string;
+        title?: string;
+        content?: string;
+        author?: { id: string; email: string };
+        isCreator?: boolean;
+        isAuthor?: boolean;
+    }>({});
+    const { query } = useContext(graphql.Context);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        (async () => {
+            try {
+                const response = await query({
+                    query: POST,
+                    variables: { id },
+                });
+
+                const foundPost = response.Posts[0];
+                if (!foundPost) {
+                    history.push(constants.DASHBOARD_PAGE);
+                }
+
+                setPost(foundPost);
+            } catch (e) {}
+
+            setLoading(false);
+        })();
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="d-flex flex-column align-items-center">
+                <Spinner className="m-5" animation="border" />
+            </div>
+        );
+    }
 
     return (
         <Container>
             <Card className="mt-3 p-3">
-                <h1>Some Cool Post</h1>
-                <p className="text-muted">- Daniel Starns at {new Date().toISOString()}</p>
-                {(isAuthor) &&
+                <h1>{post.title}</h1>
+                <p className="text-muted">- {post.author.email}</p>
+                {post.isAuthor && (
                     <>
                         <hr />
                         <div className="d-flex justify-content-start">
@@ -79,23 +94,24 @@ function Post() {
                             </Button>
                         </div>
                     </>
-                }
+                )}
             </Card>
 
             <Card className="mt-3 p-3">
-                <markdown.Render markdown={content} />
+                <markdown.Render markdown={post.content} />
             </Card>
 
             <Card className="mt-3 p-3 mb-3">
                 <h2>Comments</h2>
-                {comments.map(comment => <CommentItem comment={comment}></CommentItem>)}
+                {comments.map((comment) => (
+                    <CommentItem comment={comment}></CommentItem>
+                ))}
                 <div className="mt-3 d-flex justify-content-center w-100">
                     <Button>Load More</Button>
                 </div>
             </Card>
         </Container>
     );
-};
-
+}
 
 export default Post;

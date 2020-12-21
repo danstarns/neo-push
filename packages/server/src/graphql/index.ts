@@ -1,11 +1,12 @@
 import * as User from "./User";
 import * as Blog from "./Blog";
+import * as Post from "./Post";
 import { makeAugmentedSchema } from "@neo4j/graphql";
 import { ApolloServer } from "apollo-server-express";
 import { driver } from "../neo4j";
 
 export const neoSchema = makeAugmentedSchema({
-    typeDefs: [User.typeDefs, Blog.typeDefs],
+    typeDefs: [User.typeDefs, Blog.typeDefs, Post.typeDefs],
     resolvers: {
         ...User.resolvers,
     },

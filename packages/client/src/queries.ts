@@ -63,3 +63,63 @@ export const RECENTLY_ADDED_BLOGS = gql`
         }
     }
 `;
+
+export const BLOG = gql`
+    query($id: ID) {
+        Blogs(where: { id: $id }) {
+            id
+            name
+            creator {
+                id
+                email
+            }
+        }
+    }
+`;
+
+export const CREATE_POST = gql`
+    mutation createPost(
+        $title: String!
+        $content: String!
+        $user: ID
+        $blog: ID
+    ) {
+        createPosts(
+            input: [
+                {
+                    title: $title
+                    content: $content
+                    blog: { connect: { where: { id: $blog } } }
+                    author: { connect: { where: { id: $user } } }
+                }
+            ]
+        ) {
+            id
+        }
+    }
+`;
+
+export const POST = gql`
+    query post($id: ID) {
+        Posts(where: { id: $id }) {
+            id
+            title
+            content
+            author {
+                email
+            }
+        }
+    }
+`;
+
+export const BLOG_POSTS = gql`
+    query blogPosts($blog: ID) {
+        blogPosts: Posts(where: { blog: { id: $blog } }) {
+            id
+            title
+            author {
+                email
+            }
+        }
+    }
+`;

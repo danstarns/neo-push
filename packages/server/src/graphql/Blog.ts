@@ -4,5 +4,8 @@ export const typeDefs = `
         name: String!
         creator: User @relationship(type: "HAS_BLOG", direction: "IN")
         authors: [User] @relationship(type: "CAN_POST", direction: "IN")
+        posts: [Post] @relationship(type: "HAS_POST", direction: "OUT")
+        isCreator: Boolean # TODO
+        isAuthor: Boolean # TODO
     }
 `;
