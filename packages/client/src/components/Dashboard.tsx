@@ -13,7 +13,12 @@ import {
 import { auth, graphql } from "../contexts";
 import constants from "../constants";
 import { Link, useHistory } from "react-router-dom";
-import { USER, CREATE_BLOG, MY_BLOGS, RECENTLY_ADDED_BLOGS } from "../queries";
+import {
+    USER,
+    CREATE_BLOG,
+    MY_BLOGS,
+    RECENTLY_UPDATED_BLOGS,
+} from "../queries";
 
 function CreateBlog({ close }: { close: () => void }) {
     const history = useHistory();
@@ -107,7 +112,7 @@ function CreateBlog({ close }: { close: () => void }) {
     );
 }
 
-function BlogItem(props: { blog: any }) {
+function BlogItem(props: { blog: any; updated?: boolean }) {
     return (
         <Col md={{ span: 4 }} className="p-0">
             <Card className="m-3">
@@ -118,7 +123,12 @@ function BlogItem(props: { blog: any }) {
                     </Link>
                 </Card.Subtitle>
                 <Card.Footer className="text-muted">
-                    - {props.blog.creator.email}
+                    <p className="m-0 p-0">- {props.blog.creator.email}</p>
+                    <p className="m-0 p-0 font-italic">
+                        {props.updated
+                            ? `- ${props.blog.updatedAt}`
+                            : `- ${props.blog.createdAt}`}
+                    </p>
                 </Card.Footer>
             </Card>
         </Col>
@@ -173,7 +183,7 @@ function MyBlogs() {
     );
 }
 
-function RecentlyAddedBlogs() {
+function RecentlyUpdatedBlogs() {
     const { query } = useContext(graphql.Context);
     const [skip, setSkip] = useState(0);
     const [limit, setLimit] = useState(10);
@@ -185,11 +195,11 @@ function RecentlyAddedBlogs() {
         (async () => {
             try {
                 const response = await query({
-                    query: RECENTLY_ADDED_BLOGS,
+                    query: RECENTLY_UPDATED_BLOGS,
                     variables: { skip, limit },
                 });
 
-                setBlogs(response.recentlyAddedBlogs);
+                setBlogs(response.recentlyUpdatedBlogs);
             } catch (e) {}
 
             setLoading(false);
@@ -198,7 +208,7 @@ function RecentlyAddedBlogs() {
 
     if (loading) {
         <Card className="mt-3 p-3">
-            <h2>Recently added Blogs</h2>
+            <h2>Recently Updated</h2>
             <div className="d-flex flex-column align-items-center">
                 <Spinner className="mt-5" animation="border" />
             </div>
@@ -207,10 +217,14 @@ function RecentlyAddedBlogs() {
 
     return (
         <Card className="mt-3 p-3 mb-3">
-            <h2>Recently added Blogs</h2>
+            <h2>Recently Updated</h2>
             <Row>
                 {blogs.map((blog) => (
-                    <BlogItem key={blog.id} blog={blog}></BlogItem>
+                    <BlogItem
+                        key={blog.id}
+                        blog={blog}
+                        updated={true}
+                    ></BlogItem>
                 ))}
             </Row>
             <div className="d-flex justify-content-center w-100">
@@ -286,7 +300,7 @@ function Dashboard() {
                     </div>
                 </Card>
                 <MyBlogs />
-                <RecentlyAddedBlogs />
+                <RecentlyUpdatedBlogs />
             </Container>
         </>
     );

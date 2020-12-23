@@ -181,7 +181,10 @@ function PostItem(props: { post: any }) {
                     </Link>
                 </Card.Subtitle>
                 <Card.Footer className="text-muted">
-                    - {props.post.author.email}
+                    <p className="m-0 p-0">- {props.post.author.email}</p>
+                    <p className="m-0 p-0 font-italic">
+                        - {props.post.createdAt}
+                    </p>
                 </Card.Footer>
             </Card>
         </Col>
@@ -197,6 +200,7 @@ function Blog() {
         creator?: { id: string; email: string };
         isCreator?: boolean;
         isAuthor?: boolean;
+        createdAt?: string;
     }>({});
     const { query } = useContext(graphql.Context);
     const [loading, setLoading] = useState(true);
@@ -248,6 +252,7 @@ function Blog() {
                 <Card className="mt-3 p-3">
                     <h1>{blog.name}</h1>
                     <p className="text-muted">- {blog.creator?.email}</p>
+                    <p className="text-muted">- {blog.createdAt}</p>
                     {(!blog.isCreator || blog.isAuthor) && (
                         <>
                             <hr />

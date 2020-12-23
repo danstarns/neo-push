@@ -29,6 +29,7 @@ export const CREATE_BLOG = gql`
         ) {
             id
             name
+            createdAt
         }
     }
 `;
@@ -37,7 +38,7 @@ export const MY_BLOGS = gql`
     query myBlogs($id: ID, $skip: Int, $limit: Int) {
         myBlogs: Blogs(
             where: { OR: [{ creator: { id: $id } }, { authors: { id: $id } }] }
-            options: { limit: $limit, skip: $skip, sort: id_ASC }
+            options: { limit: $limit, skip: $skip, sort: createdAt_DESC }
         ) {
             id
             name
@@ -45,14 +46,15 @@ export const MY_BLOGS = gql`
                 id
                 email
             }
+            createdAt
         }
     }
 `;
 
-export const RECENTLY_ADDED_BLOGS = gql`
-    query recentlyAddedBlogs($skip: Int, $limit: Int) {
-        recentlyAddedBlogs: Blogs(
-            options: { limit: $limit, skip: $skip, sort: id_ASC }
+export const RECENTLY_UPDATED_BLOGS = gql`
+    query recentlyUpdatedBlogs($skip: Int, $limit: Int) {
+        recentlyUpdatedBlogs: Blogs(
+            options: { limit: $limit, skip: $skip, sort: updatedAt_DESC }
         ) {
             id
             name
@@ -60,6 +62,8 @@ export const RECENTLY_ADDED_BLOGS = gql`
                 id
                 email
             }
+            createdAt
+            updatedAt
         }
     }
 `;
@@ -73,6 +77,7 @@ export const BLOG = gql`
                 id
                 email
             }
+            createdAt
         }
     }
 `;
@@ -108,18 +113,23 @@ export const POST = gql`
             author {
                 email
             }
+            createdAt
         }
     }
 `;
 
 export const BLOG_POSTS = gql`
     query blogPosts($blog: ID) {
-        blogPosts: Posts(where: { blog: { id: $blog } }) {
+        blogPosts: Posts(
+            where: { blog: { id: $blog } }
+            options: { sort: createdAt_DESC }
+        ) {
             id
             title
             author {
                 email
             }
+            createdAt
         }
     }
 `;
@@ -143,6 +153,7 @@ export const COMMENT_ON_POST = gql`
                 id
                 email
             }
+            createdAt
         }
     }
 `;
@@ -151,7 +162,7 @@ export const POST_COMMENTS = gql`
     query postComments($post: ID, $skip: Int, $limit: Int) {
         postComments: Comments(
             where: { post: { id: $post } }
-            options: { skip: $skip, limit: $limit, sort: id_ASC }
+            options: { skip: $skip, limit: $limit, sort: createdAt_ASC }
         ) {
             id
             author {
@@ -159,6 +170,7 @@ export const POST_COMMENTS = gql`
                 email
             }
             content
+            createdAt
         }
     }
 `;

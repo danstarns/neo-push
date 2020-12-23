@@ -23,6 +23,7 @@ interface Comment {
     };
     content: string;
     post: any;
+    createdAt: string;
 }
 
 function CreateComment({
@@ -66,6 +67,7 @@ function CreateComment({
                     post: {
                         id: post,
                     },
+                    createdAt: response.commentOnPost[0].createdAt as string,
                 });
                 setContent("");
             } catch (e) {
@@ -114,6 +116,7 @@ function CommentItem(props: { comment: Comment }) {
     return (
         <Card className="mt-3 p-3">
             <p className="text-muted">- {props.comment.author.email}</p>
+            <p className="text-muted">- {props.comment.createdAt}</p>
             <div className="p-3">
                 <markdown.Render markdown={props.comment.content} />
             </div>
@@ -190,6 +193,7 @@ function Post() {
         author?: { id: string; email: string };
         isCreator?: boolean;
         isAuthor?: boolean;
+        createdAt?: string;
     }>({});
     const { query } = useContext(graphql.Context);
     const [loading, setLoading] = useState(true);
@@ -228,6 +232,7 @@ function Post() {
             <Card className="mt-3 p-3">
                 <h1>{post.title}</h1>
                 <p className="text-muted">- {post.author.email}</p>
+                <p className="text-muted">- {post.createdAt}</p>
                 {post.isAuthor && (
                     <>
                         <hr />
