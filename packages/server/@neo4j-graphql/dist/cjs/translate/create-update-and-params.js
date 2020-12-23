@@ -42,6 +42,7 @@ var create_allow_and_params_1 = __importDefault(require("./create-allow-and-para
 var auth_1 = require("../auth");
 function createUpdateAndParams(_a) {
     var updateInput = _a.updateInput, varName = _a.varName, node = _a.node, parentVar = _a.parentVar, chainStr = _a.chainStr, insideDoWhen = _a.insideDoWhen, withVars = _a.withVars, context = _a.context;
+    var updatedAt = false;
     function reducer(res, _a) {
         var _b;
         var _c = __read(_a, 2), key = _c[0], value = _c[1];
@@ -173,6 +174,10 @@ function createUpdateAndParams(_a) {
             return res;
         }
         auth_1.checkRoles({ node: node, context: context, operation: "update" });
+        if (node.timestamps && !updatedAt) {
+            res.strs.push("SET " + varName + ".updatedAt = datetime()");
+            updatedAt = true;
+        }
         res.strs.push("SET " + varName + "." + key + " = $" + param);
         res.params[param] = value;
         return res;

@@ -5,6 +5,9 @@ function replacer(_, value) {
     if (neo4j_driver_1.isInt(value)) {
         return value.toNumber();
     }
+    if (neo4j_driver_1.isDateTime(value)) {
+        return new Date(value.toString()).toISOString();
+    }
     return value;
 }
 function deserialize(result) {

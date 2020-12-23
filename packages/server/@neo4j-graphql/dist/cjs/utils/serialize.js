@@ -28,17 +28,21 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var neo4j_driver_1 = require("neo4j-driver");
+var temporal_types_1 = require("neo4j-driver/lib/temporal-types");
 function isFloat(n) {
     return Number(n) === n && n % 1 !== 0;
 }
 function traverse(v) {
     function reducer(res, _a) {
-        var _b, _c;
-        var _d = __read(_a, 2), key = _d[0], value = _d[1];
-        if (Array.isArray(value)) {
-            return __assign(__assign({}, res), (_b = {}, _b[key] = value.map(function (x) { return traverse(x); }), _b));
-        }
-        return __assign(__assign({}, res), (_c = {}, _c[key] = traverse(value), _c));
+        var _b;
+        var _c = __read(_a, 2), key = _c[0], value = _c[1];
+        return __assign(__assign({}, res), (_b = {}, _b[key] = traverse(value), _b));
+    }
+    if (Array.isArray(v)) {
+        return v.map(traverse);
+    }
+    if (v instanceof Date) {
+        return temporal_types_1.DateTime.fromStandardDate(v);
     }
     switch (typeof v) {
         case "number":

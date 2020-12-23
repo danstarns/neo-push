@@ -37,7 +37,9 @@ var Node = /** @class */ (function () {
         this.interfaceFields = input.interfaceFields;
         this.interfaces = input.interfaces;
         this.objectFields = input.objectFields;
+        this.dateTimeFields = input.dateTimeFields;
         this.auth = input.auth;
+        this.timestamps = input.timestamps;
         var selectionSet = "\n            {\n                " + [this.primitiveFields, this.scalarFields, this.enumFields].reduce(function (res, v) { return __spread(res, v.map(function (x) { return x.fieldName; })); }, []) + "\n            }\n        ";
         this.model = new Model_1.default({ name: this.name, selectionSet: selectionSet, getGraphQLSchema: input.getGraphQLSchema });
     }

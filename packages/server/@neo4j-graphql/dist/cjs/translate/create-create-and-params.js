@@ -100,8 +100,13 @@ function createCreateAndParams(_a) {
         return res;
     }
     auth_1.checkRoles({ node: node, context: context, operation: "create" });
+    var initial = __spread([
+        "CREATE (" + varName + ":" + node.name + ")"
+    ], (node.timestamps
+        ? ["SET " + varName + ".createdAt = datetime()", "SET " + varName + ".updatedAt = " + varName + ".createdAt"]
+        : []));
     var _b = Object.entries(input).reduce(reducer, {
-        creates: ["CREATE (" + varName + ":" + node.name + ")"],
+        creates: initial,
         params: {},
     }), creates = _b.creates, params = _b.params;
     return [creates.join("\n"), params];
