@@ -10,4 +10,25 @@ export const typeDefs = gql`
         isCreator: Boolean # TODO
         isAuthor: Boolean # TODO
     }
+
+    extend type Blog
+        @auth(
+            rules: [
+                { operations: ["create"], bind: { creator: { id: "sub" } } }
+                { operations: ["read"], allow: "*" }
+                {
+                    operations: ["update"]
+                    bind: {
+                        OR: [{ creator: { id: "sub" }, authors: { id: "sub" } }]
+                    }
+                    allow: {
+                        OR: [
+                            { creator: { id: "sub" } }
+                            { authors: { id: "sub" } }
+                        ]
+                    }
+                }
+                { operations: ["delete"], allow: { creator: { id: "sub" } } }
+            ]
+        )
 `;

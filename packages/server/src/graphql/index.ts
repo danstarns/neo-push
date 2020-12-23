@@ -17,5 +17,5 @@ export const neoSchema = makeAugmentedSchema({
 
 export const server: ApolloServer = new ApolloServer({
     schema: neoSchema.schema,
-    context: { neoSchema, driver },
+    context: ({ req }) => ({ neoSchema, driver, req }),
 });

@@ -7,18 +7,12 @@ import { ApolloProvider } from "@apollo/react-hooks";
 import { setContext } from "apollo-link-context";
 import { createHttpLink } from "apollo-link-http";
 import { API_URL, JWT_KEY } from "../../config";
+import constants from "../constants";
 
-type ContextType =
-    { [k: string]: any; } &
-    { client: ApolloClient<any>; } &
-    {
-        query: (args: {
-            query: DocumentNode; variables: any;
-        }) => Promise<any>;
-        mutate: (args: {
-            mutation: DocumentNode; variables: any;
-        }) => Promise<any>;
-    };
+type ContextType = { [k: string]: any } & { client: ApolloClient<any> } & {
+    query: (args: { query: DocumentNode; variables: any }) => Promise<any>;
+    mutate: (args: { mutation: DocumentNode; variables: any }) => Promise<any>;
+};
 
 // @ts-ignore
 export const Context = React.createContext<ContextType>({});
@@ -26,8 +20,8 @@ export const Context = React.createContext<ContextType>({});
 const httpLink = createHttpLink({
     uri: `${API_URL}/graphql`,
     headers: {
-        "keep-alive": "true"
-    }
+        "keep-alive": "true",
+    },
 });
 
 const authLink = setContext((_: any, { headers }) => {
@@ -36,8 +30,8 @@ const authLink = setContext((_: any, { headers }) => {
     return {
         headers: {
             ...headers,
-            authorization: token ? `Bearer ${token}` : ""
-        }
+            authorization: token ? `Bearer ${token}` : "",
+        },
     };
 });
 
@@ -47,21 +41,22 @@ const client = new ApolloClient({
             if (graphQLErrors)
                 graphQLErrors.forEach(({ message }) => {
                     if (message.includes("Unauthorized")) {
-                        window.location.href = "/logout";
+                        window.location.href = constants.LOG_OUT_PAGE;
                     }
                 });
         }),
-        authLink.concat(httpLink)
+        authLink.concat(httpLink),
     ]),
-    cache: new InMemoryCache({ dataIdFromObject: (object: any) => object._id || null }),
+    cache: new InMemoryCache({
+        dataIdFromObject: (object: any) => object._id || null,
+    }),
 });
 
-
-async function query(args: { query: DocumentNode; variables: any; }) {
+async function query(args: { query: DocumentNode; variables: any }) {
     const response = await client.query({
         query: args.query,
         variables: args.variables,
-        fetchPolicy: "no-cache"
+        fetchPolicy: "no-cache",
     });
 
     if (response.errors && response.errors.length) {
@@ -71,11 +66,11 @@ async function query(args: { query: DocumentNode; variables: any; }) {
     return response.data;
 }
 
-async function mutate(args: { mutation: DocumentNode; variables: any; }) {
+async function mutate(args: { mutation: DocumentNode; variables: any }) {
     const response = await client.mutate({
         mutation: args.mutation,
         variables: args.variables,
-        fetchPolicy: "no-cache"
+        fetchPolicy: "no-cache",
     });
 
     if (response.errors && response.errors.length) {
@@ -89,8 +84,9 @@ export function Provider(props: any) {
     return (
         // @ts-ignore
         <ApolloProvider client={client}>
-            <Context.Provider value={{ client, query, mutate }}> {props.children} </Context.Provider>
-        </ApolloProvider >
+            <Context.Provider value={{ client, query, mutate }}>
+                {props.children}
+            </Context.Provider>
+        </ApolloProvider>
     );
 }
-
