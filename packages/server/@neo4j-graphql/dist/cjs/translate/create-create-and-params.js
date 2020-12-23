@@ -36,6 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_connect_and_params_1 = __importDefault(require("./create-connect-and-params"));
 var auth_1 = require("../auth");
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 function createCreateAndParams(_a) {
     var input = _a.input, varName = _a.varName, node = _a.node, context = _a.context, withVars = _a.withVars;
     function reducer(res, _a) {
@@ -105,10 +106,26 @@ function createCreateAndParams(_a) {
     ], (node.timestamps
         ? ["SET " + varName + ".createdAt = datetime()", "SET " + varName + ".updatedAt = " + varName + ".createdAt"]
         : []));
+    // eslint-disable-next-line prefer-const
     var _b = Object.entries(input).reduce(reducer, {
         creates: initial,
         params: {},
     }), creates = _b.creates, params = _b.params;
+    if (node.auth) {
+        var bindAndParams = create_auth_and_params_1.default({
+            context: context,
+            node: node,
+            operation: "create",
+            varName: varName,
+            chainStrOverRide: varName + "_bind",
+            type: "bind",
+        });
+        if (bindAndParams[0]) {
+            creates.push("WITH " + withVars.join(", "));
+        }
+        creates.push(bindAndParams[0]);
+        params = __assign(__assign({}, params), bindAndParams[1]);
+    }
     return [creates.join("\n"), params];
 }
 exports.default = createCreateAndParams;

@@ -37,7 +37,7 @@ var create_where_and_params_1 = __importDefault(require("./create-where-and-para
 var create_projection_and_params_1 = __importDefault(require("./create-projection-and-params"));
 var create_create_and_params_1 = __importDefault(require("./create-create-and-params"));
 var auth_1 = require("../auth");
-var create_allow_and_params_1 = __importDefault(require("./create-allow-and-params"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 var create_update_and_params_1 = __importDefault(require("./create-update-and-params"));
 var create_connect_and_params_1 = __importDefault(require("./create-connect-and-params"));
 var create_disconnect_and_params_1 = __importDefault(require("./create-disconnect-and-params"));
@@ -74,11 +74,12 @@ function translateRead(_a) {
         cypherParams = __assign(__assign({}, cypherParams), where[1]);
     }
     if (node.auth) {
-        var allowAndParams = create_allow_and_params_1.default({
+        var allowAndParams = create_auth_and_params_1.default({
             operation: "read",
             node: node,
             context: context,
             varName: varName,
+            type: "allow",
         });
         cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
         authStr = allowAndParams[0];
@@ -174,11 +175,12 @@ function translateUpdate(_a) {
     var varName = "this";
     var matchStr = "MATCH (" + varName + ":" + node.name + ")";
     var whereStr = "";
-    var authStr = "";
+    var allowStr = "";
     var updateStr = "";
     var connectStr = "";
     var disconnectStr = "";
     var createStr = "";
+    var bindStr = "";
     var projStr = "";
     var cypherParams = {};
     if (whereInput) {
@@ -192,14 +194,15 @@ function translateUpdate(_a) {
         cypherParams = __assign(__assign({}, cypherParams), where[1]);
     }
     if (node.auth) {
-        var allowAndParams = create_allow_and_params_1.default({
+        var allowAndParams = create_auth_and_params_1.default({
             operation: "update",
             node: node,
             context: context,
             varName: varName,
+            type: "allow",
         });
         cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
-        authStr = allowAndParams[0];
+        allowStr = allowAndParams[0];
     }
     if (updateInput) {
         var updateAndParams = create_update_and_params_1.default({
@@ -270,6 +273,18 @@ function translateUpdate(_a) {
             });
         });
     }
+    if (node.auth) {
+        var bindAndParams = create_auth_and_params_1.default({
+            operation: "update",
+            node: node,
+            context: context,
+            varName: varName,
+            type: "bind",
+            chainStrOverRide: varName + "_bind",
+        });
+        cypherParams = __assign(__assign({}, cypherParams), bindAndParams[1]);
+        bindStr = "WITH " + varName + "\n" + bindAndParams[0];
+    }
     var projection = create_projection_and_params_1.default({
         node: node,
         context: context,
@@ -281,11 +296,12 @@ function translateUpdate(_a) {
     var cypher = [
         matchStr,
         whereStr,
-        authStr,
+        allowStr,
         updateStr,
         connectStr,
         disconnectStr,
         createStr,
+        bindStr,
         "RETURN " + varName + " " + projStr + " AS " + varName,
     ];
     return [cypher.filter(Boolean).join("\n"), cypherParams];
@@ -309,11 +325,12 @@ function translateDelete(_a) {
         cypherParams = __assign(__assign({}, cypherParams), where[1]);
     }
     if (node.auth) {
-        var allowAndParams = create_allow_and_params_1.default({
+        var allowAndParams = create_auth_and_params_1.default({
             operation: "delete",
             node: node,
             context: context,
             varName: varName,
+            type: "allow",
         });
         cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
         authStr = allowAndParams[0];

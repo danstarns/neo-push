@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var auth_1 = require("../auth");
-var create_allow_and_params_1 = __importDefault(require("./create-allow-and-params"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 function createProjectionAndParams(_a) {
     var fieldsByTypeName = _a.fieldsByTypeName, node = _a.node, context = _a.context, chainStr = _a.chainStr, varName = _a.varName, chainStrOverRide = _a.chainStrOverRide;
     function reducer(res, _a) {
@@ -125,13 +125,14 @@ function createProjectionAndParams(_a) {
                         res.params = __assign(__assign({}, res.params), whereAndParams[1]);
                     }
                     if (refNode.auth) {
-                        var allowAndParams = create_allow_and_params_1.default({
+                        var allowAndParams = create_auth_and_params_1.default({
                             node: refNode,
                             context: context,
                             varName: param,
                             chainStrOverRide: _param + "_auth",
                             functionType: true,
                             operation: "read",
+                            type: "allow",
                         });
                         innenrHeadStr.push("AND " + allowAndParams[0]);
                         res.params = __assign(__assign({}, res.params), allowAndParams[1]);
@@ -192,12 +193,13 @@ function createProjectionAndParams(_a) {
                 res.params = __assign(__assign({}, res.params), where[1]);
             }
             if (referenceNode.auth) {
-                var allowAndParams = create_allow_and_params_1.default({
+                var allowAndParams = create_auth_and_params_1.default({
                     node: referenceNode,
                     context: context,
                     varName: varName + "_" + key,
                     functionType: true,
                     operation: "read",
+                    type: "allow",
                 });
                 authStr = allowAndParams[0];
                 res.params = __assign(__assign({}, res.params), allowAndParams[1]);

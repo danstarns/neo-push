@@ -38,7 +38,7 @@ var create_connect_and_params_1 = __importDefault(require("./create-connect-and-
 var create_disconnect_and_params_1 = __importDefault(require("./create-disconnect-and-params"));
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var create_create_and_params_1 = __importDefault(require("./create-create-and-params"));
-var create_allow_and_params_1 = __importDefault(require("./create-allow-and-params"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 var auth_1 = require("../auth");
 function createUpdateAndParams(_a) {
     var updateInput = _a.updateInput, varName = _a.varName, node = _a.node, parentVar = _a.parentVar, chainStr = _a.chainStr, insideDoWhen = _a.insideDoWhen, withVars = _a.withVars, context = _a.context;
@@ -88,11 +88,12 @@ function createUpdateAndParams(_a) {
                     res.strs.push("CALL apoc.do.when(" + _varName + " IS NOT NULL, " + (insideDoWhen ? '\\"' : '"'));
                     var innerApocParams = {};
                     if (refNode_1.auth) {
-                        var allowAndParams = create_allow_and_params_1.default({
+                        var allowAndParams = create_auth_and_params_1.default({
                             operation: "update",
                             node: refNode_1,
                             context: context,
                             varName: _varName,
+                            type: "allow",
                         });
                         res.strs.push(allowAndParams[0].replace(/"/g, '\\"'));
                         res.params = __assign(__assign({}, res.params), allowAndParams[1]);
@@ -110,6 +111,19 @@ function createUpdateAndParams(_a) {
                     });
                     res.params = __assign(__assign({}, res.params), updateAndParams[1]);
                     innerApocParams = __assign(__assign({}, innerApocParams), updateAndParams[1]);
+                    if (refNode_1.auth) {
+                        var bindAndParams = create_auth_and_params_1.default({
+                            operation: "update",
+                            node: refNode_1,
+                            context: context,
+                            varName: _varName,
+                            chainStrOverRide: _varName + "_bind",
+                            type: "bind",
+                        });
+                        res.strs.push(bindAndParams[0].replace(/"/g, '\\"'));
+                        res.params = __assign(__assign({}, res.params), bindAndParams[1]);
+                        innerApocParams = __assign(__assign({}, innerApocParams), bindAndParams[1]);
+                    }
                     var updateStrs = [updateAndParams[0], "RETURN count(*)"];
                     var apocArgs = "{" + parentVar + ":" + parentVar + ", " + _varName + ":" + _varName + "REPLACE_ME}";
                     if (insideDoWhen) {
