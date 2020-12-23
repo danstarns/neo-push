@@ -30,10 +30,7 @@ export const typeDefs = gql`
                         ]
                     }
                 }
-                {
-                    operations: ["delete", "disconnect"]
-                    allow: { creator: { id: "sub" } }
-                }
+                { operations: ["delete"], allow: { creator: { id: "sub" } } }
             ]
         )
 `;
