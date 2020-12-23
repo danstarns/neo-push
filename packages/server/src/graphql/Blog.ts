@@ -18,9 +18,11 @@ export const typeDefs = gql`
                 { operations: ["read"], allow: "*" }
                 {
                     operations: ["update"]
-                    bind: {
-                        OR: [{ creator: { id: "sub" }, authors: { id: "sub" } }]
-                    }
+                    allow: { creator: { id: "sub" } }
+                    bind: { creator: { id: "sub" } }
+                }
+                {
+                    operations: ["connect"]
                     allow: {
                         OR: [
                             { creator: { id: "sub" } }
@@ -28,7 +30,10 @@ export const typeDefs = gql`
                         ]
                     }
                 }
-                { operations: ["delete"], allow: { creator: { id: "sub" } } }
+                {
+                    operations: ["delete", "disconnect"]
+                    allow: { creator: { id: "sub" } }
+                }
             ]
         )
 `;
