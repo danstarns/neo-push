@@ -35,8 +35,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 function createConnectAndParams(_a) {
-    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride;
+    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride, parentNode = _a.parentNode, fromCreate = _a.fromCreate;
     function reducer(res, connect, index) {
         var _varName = "" + varName + index;
         var inStr = relationField.direction === "IN" ? "<-" : "-";
@@ -53,6 +54,18 @@ function createConnectAndParams(_a) {
             });
             res.connects.push(where[0]);
             res.params = __assign(__assign({}, res.params), where[1]);
+        }
+        if (refNode.auth) {
+            var allowAndParams = create_auth_and_params_1.default({
+                context: context,
+                node: refNode,
+                operation: "connect",
+                varName: _varName,
+                chainStrOverRide: _varName + "_allow",
+                type: "allow",
+            });
+            res.connects.push(allowAndParams[0]);
+            res.params = __assign(__assign({}, res.params), allowAndParams[1]);
         }
         /*
            Replace with subclauses https://neo4j.com/developer/kb/conditional-cypher-execution/
@@ -83,6 +96,7 @@ function createConnectAndParams(_a) {
                         parentVar: _varName,
                         context: context,
                         refNode: newRefNode,
+                        parentNode: refNode,
                     });
                     r.connects.push(recurse[0]);
                     r.params = __assign(__assign({}, r.params), recurse[1]);
@@ -94,10 +108,28 @@ function createConnectAndParams(_a) {
         }
         return res;
     }
+    // eslint-disable-next-line prefer-const
     var _b = (relationField.typeMeta.array ? value : [value]).reduce(reducer, {
         connects: [],
         params: {},
     }), connects = _b.connects, params = _b.params;
+    if (parentNode.auth && !fromCreate) {
+        var allowAndParams = create_auth_and_params_1.default({
+            context: context,
+            node: parentNode,
+            operation: "connect",
+            varName: parentVar,
+            chainStrOverRide: parentVar + "_allow",
+            type: "allow",
+        });
+        params = __assign(__assign({}, params), allowAndParams[1]);
+        if (allowAndParams[0]) {
+            if (withVars) {
+                connects = __spread(["WITH " + withVars.join(", ")], connects);
+            }
+            connects = __spread([allowAndParams[0]], connects);
+        }
+    }
     return [connects.join("\n"), params];
 }
 exports.default = createConnectAndParams;

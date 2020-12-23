@@ -228,6 +228,7 @@ function translateUpdate(_a) {
                 value: entry[1],
                 varName: varName + "_disconnect_" + entry[0],
                 withVars: [varName],
+                parentNode: node,
             });
             disconnectStr = disconnectAndParams[0];
             cypherParams = __assign(__assign({}, cypherParams), disconnectAndParams[1]);
@@ -245,6 +246,7 @@ function translateUpdate(_a) {
                 value: entry[1],
                 varName: varName + "_connect_" + entry[0],
                 withVars: [varName],
+                parentNode: node,
             });
             connectStr = connectAndParams[0];
             cypherParams = __assign(__assign({}, cypherParams), connectAndParams[1]);

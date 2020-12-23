@@ -147,6 +147,7 @@ function createUpdateAndParams(_a) {
                         parentVar: parentVar,
                         relationField: relationField,
                         labelOverride: unionTypeName,
+                        parentNode: node,
                     });
                     res.strs.push(disconnectAndParams[0]);
                     res.params = __assign(__assign({}, res.params), disconnectAndParams[1]);
@@ -161,6 +162,7 @@ function createUpdateAndParams(_a) {
                         parentVar: parentVar,
                         relationField: relationField,
                         labelOverride: unionTypeName,
+                        parentNode: node,
                     });
                     res.strs.push(connectAndParams[0]);
                     res.params = __assign(__assign({}, res.params), connectAndParams[1]);

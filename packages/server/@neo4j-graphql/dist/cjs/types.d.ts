@@ -66,7 +66,6 @@ export interface GraphQLWhereArg {
     AND?: GraphQLOptionsArg[];
     OR?: GraphQLOptionsArg[];
 }
-export declare type AuthOperations = "create" | "read" | "update" | "delete";
 /**
  * Whats returned when deleting nodes
  */
@@ -74,3 +73,4 @@ export interface DeleteInfo {
     nodesDeleted: number;
     relationshipsDeleted: number;
 }
+export declare type AuthOperations = "create" | "read" | "update" | "delete" | "connect" | "disconnect";

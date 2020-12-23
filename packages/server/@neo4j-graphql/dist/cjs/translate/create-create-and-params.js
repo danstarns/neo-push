@@ -85,6 +85,8 @@ function createCreateAndParams(_a) {
                     context: context,
                     refNode: refNode_1,
                     labelOverride: unionTypeName_1,
+                    parentNode: node,
+                    fromCreate: true,
                 });
                 res.creates.push(connectAndParams[0]);
                 res.params = __assign(__assign({}, res.params), connectAndParams[1]);

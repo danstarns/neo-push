@@ -31,7 +31,7 @@ function getAuth(directive) {
             if (typeof op !== "string") {
                 throw new Error("rules[" + index + "].operations[" + opIndex + "] invalid");
             }
-            if (!["create", "read", "update", "delete"].includes(op)) {
+            if (!["create", "read", "update", "delete", "connect", "disconnect"].includes(op)) {
                 throw new Error("rules[" + index + "].operations[" + opIndex + "] invalid");
             }
         });

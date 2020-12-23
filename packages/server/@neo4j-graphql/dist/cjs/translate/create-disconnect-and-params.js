@@ -35,8 +35,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 function createDisconnectAndParams(_a) {
-    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride;
+    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride, parentNode = _a.parentNode;
     function reducer(res, disconnect, index) {
         var _varName = "" + varName + index;
         var inStr = relationField.direction === "IN" ? "<-" : "-";
@@ -53,6 +54,18 @@ function createDisconnectAndParams(_a) {
             });
             res.disconnects.push(where[0]);
             res.params = __assign(__assign({}, res.params), where[1]);
+        }
+        if (refNode.auth) {
+            var allowAndParams = create_auth_and_params_1.default({
+                context: context,
+                node: refNode,
+                operation: "disconnect",
+                varName: _varName,
+                chainStrOverRide: _varName + "_allow",
+                type: "allow",
+            });
+            res.disconnects.push(allowAndParams[0]);
+            res.params = __assign(__assign({}, res.params), allowAndParams[1]);
         }
         /*
            Replace with subclauses https://neo4j.com/developer/kb/conditional-cypher-execution/
@@ -85,6 +98,7 @@ function createDisconnectAndParams(_a) {
                         parentVar: _varName,
                         context: context,
                         refNode: newRefNode,
+                        parentNode: refNode,
                     });
                     r.disconnects.push(recurse[0]);
                     r.params = __assign(__assign({}, r.params), recurse[1]);
@@ -96,9 +110,23 @@ function createDisconnectAndParams(_a) {
         }
         return res;
     }
+    var initialStrs = [];
+    var initialParams = {};
+    if (parentNode.auth) {
+        var allowAndParams = create_auth_and_params_1.default({
+            context: context,
+            node: parentNode,
+            operation: "disconnect",
+            varName: parentVar,
+            chainStrOverRide: parentVar + "_allow",
+            type: "allow",
+        });
+        initialStrs.push(allowAndParams[0]);
+        initialParams = __assign(__assign({}, initialParams), allowAndParams[1]);
+    }
     var _b = (relationField.typeMeta.array ? value : [value]).reduce(reducer, {
-        disconnects: [],
-        params: {},
+        disconnects: initialStrs,
+        params: initialParams,
     }), disconnects = _b.disconnects, params = _b.params;
     return [disconnects.join("\n"), params];
 }
