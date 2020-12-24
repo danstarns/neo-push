@@ -213,6 +213,19 @@ function translateUpdate(_a) {
             parentVar: varName,
             withVars: [varName],
         });
+        if (updateAndParams[0]) {
+            if (node.auth) {
+                var allowAndParams = create_auth_and_params_1.default({
+                    operation: "update",
+                    node: node,
+                    context: context,
+                    varName: varName,
+                    type: "allow",
+                });
+                cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
+                allowStr = allowAndParams[0];
+            }
+        }
         updateStr = updateAndParams[0];
         cypherParams = __assign(__assign({}, cypherParams), updateAndParams[1]);
     }

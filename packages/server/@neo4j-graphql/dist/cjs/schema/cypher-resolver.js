@@ -53,25 +53,32 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var neo4j_driver_1 = require("neo4j-driver");
 var utils_1 = require("../utils");
 var get_field_type_meta_1 = __importDefault(require("./get-field-type-meta"));
+var classes_1 = require("../classes");
 /**
  * Called on custom (Queries & Mutations "TOP LEVEL") with a @cypher directive. Not to mistaken for @cypher type fields.
  */
 function cypherResolver(_a) {
     var defaultAccessMode = _a.defaultAccessMode, field = _a.field, statement = _a.statement, getSchema = _a.getSchema;
-    function resolve(_root, args, context) {
+    function resolve(_root, args, graphQLContext) {
         return __awaiter(this, void 0, void 0, function () {
-            var neoSchema, driver, result, values;
+            var neoSchema, driver, context, safeJWT, result, values;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         neoSchema = getSchema();
-                        driver = context.driver;
+                        driver = graphQLContext.driver;
                         if (!driver) {
                             throw new Error("context.driver missing");
                         }
+                        context = new classes_1.Context({
+                            graphQLContext: graphQLContext,
+                            neoSchema: neoSchema,
+                            driver: driver,
+                        });
+                        safeJWT = context.getJWTSafe();
                         return [4 /*yield*/, utils_1.execute({
                                 cypher: statement,
-                                params: utils_1.serialize(args),
+                                params: utils_1.serialize(__assign(__assign({}, args), { jwt: safeJWT })),
                                 driver: driver,
                                 defaultAccessMode: defaultAccessMode,
                                 neoSchema: neoSchema,

@@ -10,7 +10,7 @@ declare function cypherResolver({ defaultAccessMode, field, statement, getSchema
     getSchema: () => NeoSchema;
 }): {
     type: string;
-    resolve: (_root: any, args: any, context: any) => Promise<any>;
+    resolve: (_root: any, args: any, graphQLContext: any) => Promise<any>;
     args: {};
 };
 export default cypherResolver;

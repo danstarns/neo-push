@@ -46,6 +46,16 @@ var Context = /** @class */ (function () {
         this.jwt = jwt;
         return jwt;
     };
+    Context.prototype.getJWTSafe = function () {
+        var jwt = {};
+        try {
+            jwt = this.getJWT() || {};
+        }
+        catch (error) {
+            return {};
+        }
+        return jwt;
+    };
     return Context;
 }());
 exports.default = Context;

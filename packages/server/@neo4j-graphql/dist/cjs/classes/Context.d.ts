@@ -12,5 +12,6 @@ declare class Context {
     jwt: any;
     constructor(input: ContextConstructor);
     getJWT(): any;
+    getJWTSafe(): any;
 }
 export default Context;

@@ -57,6 +57,7 @@ function createProjectionAndParams(_a) {
         var cypherField = node.cypherFields.find(function (x) { return x.fieldName === key; });
         if (cypherField) {
             var projectionStr = "";
+            var isPrimitive = ["ID", "String", "Boolean", "Float", "Int", "DateTime"].includes(cypherField.typeMeta.name);
             var referenceNode = context.neoSchema.nodes.find(function (x) { return x.name === cypherField.typeMeta.name; });
             if (referenceNode) {
                 var recurse = createProjectionAndParams({
@@ -69,22 +70,28 @@ function createProjectionAndParams(_a) {
                 projectionStr = recurse[0];
                 res.params = __assign(__assign({}, res.params), recurse[1]);
             }
-            var apocParams = Object.entries(field.args).reduce(function (r, f) {
+            var safeJWT = context.getJWTSafe();
+            var apocParams = Object.entries(field.args).reduce(function (r, entry) {
                 var _a;
-                var argName = param + "_" + f[0];
+                var argName = param + "_" + entry[0];
                 return {
-                    strs: __spread(r.strs, [f[0] + ": $" + argName]),
-                    params: __assign(__assign({}, r.params), (_a = {}, _a[argName] = f[1], _a)),
+                    strs: __spread(r.strs, [entry[0] + ": $" + argName]),
+                    params: __assign(__assign({}, r.params), (_a = {}, _a[argName] = entry[1], _a)),
                 };
-            }, { strs: [], params: {} });
-            res.params = __assign(__assign({}, res.params), apocParams.params);
+            }, { strs: ["jwt: $jwt"], params: {} });
+            res.params = __assign(__assign(__assign({}, res.params), apocParams.params), { jwt: safeJWT });
             var expectMultipleValues = referenceNode && cypherField.typeMeta.array ? "true" : "false";
-            var apocStr = param + " IN apoc.cypher.runFirstColumn(\"" + cypherField.statement + "\", {this: " + (chainStr || varName) + (apocParams.strs.length ? ", " + apocParams.strs.join(", ") : "") + "}, " + expectMultipleValues + ") " + (projectionStr ? "| " + param + " " + projectionStr : "");
+            var apocStr = (!isPrimitive ? param + " IN" : "") + " apoc.cypher.runFirstColumn(\"" + cypherField.statement + "\", {this: " + (chainStr || varName) + (apocParams.strs.length ? ", " + apocParams.strs.join(", ") : "") + "}, " + expectMultipleValues + ") " + (projectionStr ? "| " + param + " " + projectionStr : "");
             if (!cypherField.typeMeta.array) {
                 res.projection.push(key + ": head([" + apocStr + "])");
                 return res;
             }
-            res.projection.push(key + ": [" + apocStr + "]");
+            if (isPrimitive) {
+                res.projection.push(key + ": " + apocStr);
+            }
+            else {
+                res.projection.push(key + ": [" + apocStr + "]");
+            }
             return res;
         }
         var relationField = node.relationFields.find(function (x) { return x.fieldName === key; });
