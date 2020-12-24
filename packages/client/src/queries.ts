@@ -135,17 +135,15 @@ export const BLOG_POSTS = gql`
 `;
 
 export const COMMENT_ON_POST = gql`
-    mutation commentOnPost($post: ID, $content: String!, $user: ID) {
-        commentOnPost: updatePosts(
-            where: { id: $post }
-            create: {
-                comments: [
-                    {
-                        content: $content
-                        author: { connect: { where: { id: $user } } }
-                    }
-                ]
-            }
+    mutation createComment($post: ID, $content: String!, $user: ID) {
+        commentOnPost: createComments(
+            input: [
+                {
+                    content: $content
+                    post: { connect: { where: { id: $post } } }
+                    author: { connect: { where: { id: $user } } }
+                }
+            ]
         ) {
             id
             content
