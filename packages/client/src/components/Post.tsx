@@ -9,7 +9,7 @@ import {
     Form,
 } from "react-bootstrap";
 import * as markdown from "./Markdown";
-import { POST } from "../queries";
+import { EDIT_COMMENT, POST } from "../queries";
 import { graphql, auth } from "../contexts";
 import { useParams, useHistory } from "react-router-dom";
 import constants from "../constants";
@@ -24,6 +24,7 @@ interface Comment {
     content: string;
     post: any;
     createdAt: string;
+    canDelete: boolean;
 }
 
 function CreateComment({
@@ -68,6 +69,7 @@ function CreateComment({
                         id: post,
                     },
                     createdAt: response.commentOnPost[0].createdAt as string,
+                    canDelete: true,
                 });
                 setContent("");
             } catch (e) {
@@ -112,14 +114,133 @@ function CreateComment({
     );
 }
 
-function CommentItem(props: { comment: Comment }) {
+function CommentItem(props: {
+    comment: Comment;
+    setComments: (cb: (comments: Comment[]) => any) => void;
+}) {
+    const { getId } = useContext(auth.Context);
+    const { mutate } = useContext(graphql.Context);
+    const canEdit = getId() === props.comment.author.id;
+    const [isEditing, setIsEditing] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [editedMarkdown, setEditedMarkdown] = useState(props.comment.content);
+
+    useEffect(() => {
+        setLoading(false);
+        setError("");
+    }, [isEditing]);
+
+    const editComment = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: EDIT_COMMENT,
+                variables: {
+                    id: props.comment.id,
+                    content: editedMarkdown,
+                },
+            });
+
+            props.setComments((comments) =>
+                comments.map((c) => {
+                    if (c.id !== props.comment.id) {
+                        return c;
+                    }
+
+                    return {
+                        ...c,
+                        content: editedMarkdown,
+                    };
+                })
+            );
+        } catch (error) {
+            setIsEditing(false);
+        }
+
+        setLoading(false);
+        setIsEditing(false);
+    }, [editedMarkdown, props.comment.id]);
+
     return (
         <Card className="mt-3 p-3">
             <p className="text-muted">- {props.comment.author.email}</p>
             <p className="text-muted">- {props.comment.createdAt}</p>
-            <div className="p-3">
-                <markdown.Render markdown={props.comment.content} />
-            </div>
+            {isEditing ? (
+                <>
+                    {loading || error ? (
+                        <>
+                            {error && (
+                                <Card className="m-3 p-3">
+                                    <Alert variant="danger text-center">
+                                        {error}
+                                    </Alert>
+                                </Card>
+                            )}
+
+                            {loading && (
+                                <Card className="m-3 p-3">
+                                    <div className="d-flex flex-column align-items-center">
+                                        <Spinner animation="border" />
+                                    </div>
+                                </Card>
+                            )}
+                        </>
+                    ) : (
+                        <div className="mb-3">
+                            <markdown.Editor
+                                markdown={editedMarkdown}
+                                onChange={(mk: string) => setEditedMarkdown(mk)}
+                            ></markdown.Editor>
+                        </div>
+                    )}
+                </>
+            ) : (
+                <div className="p-3">
+                    <markdown.Render markdown={props.comment.content} />
+                </div>
+            )}
+            {(props.comment.canDelete || canEdit) && (
+                <div className="d-flex justify-content-start">
+                    {props.comment.canDelete && (
+                        <Button variant="outline-danger" size="sm">
+                            Delete
+                        </Button>
+                    )}
+                    {canEdit && !isEditing && (
+                        <Button
+                            className="ml-2"
+                            variant="outline-secondary"
+                            size="sm"
+                            onClick={() => setIsEditing(true)}
+                        >
+                            Edit
+                        </Button>
+                    )}
+
+                    {isEditing && (
+                        <>
+                            <Button
+                                className="ml-2"
+                                variant="warning"
+                                size="sm"
+                                onClick={() => setIsEditing(false)}
+                            >
+                                Cancel Edit
+                            </Button>
+                            <Button
+                                className="ml-2"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => editComment()}
+                            >
+                                Submit
+                            </Button>
+                        </>
+                    )}
+                </div>
+            )}
         </Card>
     );
 }
@@ -174,7 +295,11 @@ function PostComments({
         <>
             <h2>Comments</h2>
             {comments.map((comment) => (
-                <CommentItem key={comment.id} comment={comment}></CommentItem>
+                <CommentItem
+                    key={comment.id}
+                    comment={comment}
+                    setComments={setComments}
+                ></CommentItem>
             ))}
             <div className="d-flex justify-content-center w-100 mt-3">
                 <Button>Load More</Button>
@@ -196,6 +321,7 @@ function Post() {
         createdAt?: string;
     }>({});
     const { query } = useContext(graphql.Context);
+    const { isLoggedIn } = useContext(auth.Context);
     const [loading, setLoading] = useState(true);
     const [comments, setComments] = useState([]);
 
@@ -256,14 +382,16 @@ function Post() {
                     comments={comments}
                 />
 
-                <div className="pt-3">
-                    <CreateComment
-                        post={post.id}
-                        onCreate={(comment) => {
-                            setComments((c) => [...c, comment]);
-                        }}
-                    ></CreateComment>
-                </div>
+                {isLoggedIn && (
+                    <div className="pt-3">
+                        <CreateComment
+                            post={post.id}
+                            onCreate={(comment) => {
+                                setComments((c) => [...c, comment]);
+                            }}
+                        ></CreateComment>
+                    </div>
+                )}
             </Card>
         </Container>
     );

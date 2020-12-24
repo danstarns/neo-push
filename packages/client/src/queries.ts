@@ -169,6 +169,15 @@ export const POST_COMMENTS = gql`
             }
             content
             createdAt
+            canDelete
+        }
+    }
+`;
+
+export const EDIT_COMMENT = gql`
+    mutation updateComment($id: ID, $content: String) {
+        updateComments(where: { id: $id }, update: { content: $content }) {
+            id
         }
     }
 `;
