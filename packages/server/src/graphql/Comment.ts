@@ -7,4 +7,33 @@ export const typeDefs = gql`
         content: String!
         post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
     }
+
+    extend type Comment
+        @auth(
+            rules: [
+                { operations: ["read"], allow: "*" }
+                { operations: ["create"], bind: { author: { id: "sub" } } }
+                {
+                    operations: ["update", "connect"]
+                    allow: { author: { id: "sub" } }
+                    bind: { author: { id: "sub" } }
+                }
+                {
+                    operations: ["disconnect"]
+                    allow: {
+                        OR: [
+                            { author: { id: "sub" } }
+                            {
+                                post: {
+                                    OR: [
+                                        { author: { id: "sub" } }
+                                        { blog: { creator: { id: "sub" } } }
+                                    ]
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        )
 `;
