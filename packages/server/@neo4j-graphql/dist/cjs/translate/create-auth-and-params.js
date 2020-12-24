@@ -31,7 +31,7 @@ function createAuthAndParams(_a) {
     var _b;
     var varName = _a.varName, node = _a.node, chainStr = _a.chainStr, context = _a.context, functionType = _a.functionType, recurseArray = _a.recurseArray, operation = _a.operation, chainStrOverRide = _a.chainStrOverRide, type = _a.type;
     var rules = (((_b = node === null || node === void 0 ? void 0 : node.auth) === null || _b === void 0 ? void 0 : _b.rules) || []).filter(function (r) { var _a; return ((_a = r.operations) === null || _a === void 0 ? void 0 : _a.includes(operation)) && r[type] && r.isAuthenticated !== false; });
-    if (rules.filter(function (x) { return x[type] === "*"; }).length) {
+    if (rules.filter(function (x) { return x[type] === "*"; }).length && !recurseArray) {
         return ["", {}];
     }
     function reducer(res, ruleValue, index) {
