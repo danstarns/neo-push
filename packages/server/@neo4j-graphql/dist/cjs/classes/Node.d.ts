@@ -16,8 +16,8 @@ export interface NodeConstructor {
     objectFields: ObjectField[];
     dateTimeFields: DateTimeField[];
     auth?: Auth;
-    getGraphQLSchema: () => GraphQLSchema;
     timestamps?: boolean;
+    getGraphQLSchema: () => GraphQLSchema;
 }
 declare class Node {
     name: string;
@@ -33,8 +33,8 @@ declare class Node {
     objectFields: ObjectField[];
     dateTimeFields: DateTimeField[];
     auth?: Auth;
-    model: Model;
     timestamps?: boolean;
+    model: Model;
     constructor(input: NodeConstructor);
 }
 export default Node;

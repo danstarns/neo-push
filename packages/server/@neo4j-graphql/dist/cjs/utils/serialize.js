@@ -39,7 +39,7 @@ function traverse(v) {
         return __assign(__assign({}, res), (_b = {}, _b[key] = traverse(value), _b));
     }
     if (Array.isArray(v)) {
-        return v.map(traverse);
+        return v.map(function (x) { return traverse(x); });
     }
     if (v instanceof Date) {
         return temporal_types_1.DateTime.fromStandardDate(v);

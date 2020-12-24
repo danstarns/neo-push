@@ -289,7 +289,7 @@ function makeAugmentedSchema(options) {
         });
         var node = new classes_1.Node(__assign(__assign({ name: definition.name.value, interfaces: nodeInterfaces, otherDirectives: otherDirectives }, nodeFields), { 
             // @ts-ignore
-            auth: auth, getGraphQLSchema: function () { return neoSchemaInput.schema; }, timestamps: Boolean(timeStamps) }));
+            auth: auth, timestamps: Boolean(timeStamps), getGraphQLSchema: function () { return neoSchemaInput.schema; } }));
         return node;
     });
     var nodeNames = nodes.map(function (x) { return x.name; });
