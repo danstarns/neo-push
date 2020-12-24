@@ -30,6 +30,16 @@ export const typeDefs = gql`
                         ]
                     }
                 }
+                {
+                    operations: ["disconnect"]
+                    allow: {
+                        OR: [
+                            { creator: { id: "sub" } }
+                            { authors: { id: "sub" } }
+                            { posts: { author: { id: "sub" } } }
+                        ]
+                    }
+                }
                 { operations: ["delete"], allow: { creator: { id: "sub" } } }
             ]
         )
