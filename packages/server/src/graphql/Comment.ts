@@ -6,6 +6,22 @@ export const typeDefs = gql`
         author: User @relationship(type: "COMMENTED", direction: "IN")
         content: String!
         post: Post @relationship(type: "HAS_COMMENT", direction: "IN")
+        canDelete: Boolean
+            @cypher(
+                statement: """
+                OPTIONAL MATCH (this)<-[:COMMENTED]-(author:User {id: $jwt.sub})
+                OPTIONAL MATCH (this)<-[:HAS_COMMENT]-(post:Post)
+                OPTIONAL MATCH (post)<-[:WROTE]-(postAuthor:User {id: $jwt.sub})
+                OPTIONAL MATCH (post)<-[:HAS_POST]-(blog:Blog)
+                OPTIONAL MATCH (blog)<-[:HAS_BLOG]-(blogCreator:User {id: $jwt.sub})
+                WITH (
+                    (author IS NOT NULL) OR
+                    (postAuthor IS NOT NULL) OR
+                    (blogCreator IS NOT NULL)
+                ) AS canDelete
+                RETURN canDelete
+                """
+            )
     }
 
     extend type Comment
@@ -19,7 +35,7 @@ export const typeDefs = gql`
                     bind: { author: { id: "sub" } }
                 }
                 {
-                    operations: ["disconnect"]
+                    operations: ["delete", "disconnect"]
                     allow: {
                         OR: [
                             { author: { id: "sub" } }
