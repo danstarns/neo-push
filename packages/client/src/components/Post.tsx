@@ -55,7 +55,6 @@ function CreateComment({
     post: string;
     onCreate: (comment: Comment) => void;
 }) {
-    const history = useHistory();
     const { mutate } = useContext(graphql.Context);
     const { getId } = useContext(auth.Context);
     const [content, setContent] = useState("");
@@ -68,39 +67,35 @@ function CreateComment({
         }
     }, [content, setError]);
 
-    const submit = useCallback(
-        async (event: React.FormEvent) => {
-            event.preventDefault();
-            setLoading(true);
+    const submit = useCallback(async () => {
+        setLoading(true);
 
-            try {
-                const response = await mutate({
-                    mutation: COMMENT_ON_POST,
-                    variables: { post, content, user: getId() },
-                });
+        try {
+            const response = await mutate({
+                mutation: COMMENT_ON_POST,
+                variables: { post, content, user: getId() },
+            });
 
-                onCreate({
-                    id: response.commentOnPost[0].id as string,
-                    content,
-                    author: {
-                        id: response.commentOnPost[0].author.id as string,
-                        email: response.commentOnPost[0].author.email as string,
-                    },
-                    post: {
-                        id: post,
-                    },
-                    createdAt: response.commentOnPost[0].createdAt as string,
-                    canDelete: true,
-                });
-                setContent("");
-            } catch (e) {
-                setError(e.message);
-            }
+            onCreate({
+                id: response.commentOnPost[0].id as string,
+                content,
+                author: {
+                    id: response.commentOnPost[0].author.id as string,
+                    email: response.commentOnPost[0].author.email as string,
+                },
+                post: {
+                    id: post,
+                },
+                createdAt: response.commentOnPost[0].createdAt as string,
+                canDelete: true,
+            });
+            setContent("");
+        } catch (e) {
+            setError(e.message);
+        }
 
-            setLoading(false);
-        },
-        [content, post, mutate, setLoading, setError, getId]
-    );
+        setLoading(false);
+    }, [content, post, mutate, setLoading, setError, getId]);
 
     if (loading) {
         return (
@@ -113,7 +108,7 @@ function CreateComment({
     }
 
     return (
-        <Form onSubmit={submit}>
+        <div>
             <div className="mb-3">
                 <markdown.Editor
                     markdown={content}
@@ -127,11 +122,11 @@ function CreateComment({
                 </Alert>
             )}
             <div className="d-flex justify-content-end">
-                <Button variant="primary" type="submit" className="ml-2">
+                <Button variant="primary" className="ml-2" onClick={submit}>
                     Submit
                 </Button>
             </div>
-        </Form>
+        </div>
     );
 }
 
@@ -208,7 +203,6 @@ function DeleteComment(props: {
                     </Button>
                     <Button
                         variant="danger"
-                        type="submit"
                         className="ml-2"
                         onClick={deleteComment}
                     >
@@ -288,7 +282,6 @@ function DeletePost(props: { post: PostInterface; close: () => void }) {
                     </Button>
                     <Button
                         variant="danger"
-                        type="submit"
                         className="ml-2"
                         onClick={deletePost}
                     >
@@ -473,10 +466,20 @@ function PostComments({
                     variables: { post, skip, limit },
                 });
 
-                setComments((c: Comment[]) => [
-                    ...c,
-                    ...(response.postComments as Comment[]),
-                ]);
+                setComments((c: Comment[]) => {
+                    const newComments = [
+                        ...c,
+                        ...(response.postComments as Comment[]),
+                    ];
+
+                    const uniqueComments = Array.from(
+                        new Set(newComments.map((x) => x.id))
+                    );
+
+                    return uniqueComments.map((id) =>
+                        newComments.find((x) => x.id === id)
+                    );
+                });
             } catch (e) {}
 
             setLoading(false);

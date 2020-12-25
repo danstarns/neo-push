@@ -78,6 +78,30 @@ export const BLOG = gql`
                 email
             }
             createdAt
+            isCreator
+            isAuthor
+        }
+    }
+`;
+
+export const EDIT_BLOG = gql`
+    mutation editBlog($id: ID, $name: String) {
+        updateBlogs(where: { id: $id }, update: { name: $name }) {
+            id
+        }
+    }
+`;
+
+export const DELETE_BLOG = gql`
+    mutation deleteBlog($id: ID) {
+        deleteComments(where: { post: { blog: { id: $id } } }) {
+            nodesDeleted
+        }
+        deletePosts(where: { blog: { id: $id } }) {
+            nodesDeleted
+        }
+        deleteBlogs(where: { id: $id }) {
+            nodesDeleted
         }
     }
 `;

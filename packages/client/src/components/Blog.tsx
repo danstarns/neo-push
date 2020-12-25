@@ -9,15 +9,38 @@ import {
     Modal,
     Form,
     Alert,
+    InputGroup,
+    FormControl,
 } from "react-bootstrap";
 import { useParams, useHistory } from "react-router-dom";
 import constants from "../constants";
 import { Link } from "react-router-dom";
 import { graphql, auth } from "../contexts";
-import { BLOG, CREATE_POST, BLOG_POSTS } from "../queries";
+import {
+    BLOG,
+    CREATE_POST,
+    BLOG_POSTS,
+    EDIT_BLOG,
+    DELETE_BLOG,
+} from "../queries";
 import * as markdown from "./Markdown";
 
-function CreatePost({ close, blog }: { close: () => void; blog: string }) {
+interface BlogInterface {
+    id?: string;
+    name?: string;
+    creator?: { id: string; email: string };
+    isCreator?: boolean;
+    isAuthor?: boolean;
+    createdAt?: string;
+}
+
+function CreatePost({
+    close,
+    blog,
+}: {
+    close: () => void;
+    blog: BlogInterface;
+}) {
     const history = useHistory();
     const { mutate } = useContext(graphql.Context);
     const { getId } = useContext(auth.Context);
@@ -40,7 +63,7 @@ function CreatePost({ close, blog }: { close: () => void; blog: string }) {
             try {
                 const response = await mutate({
                     mutation: CREATE_POST,
-                    variables: { title, content, user: getId(), blog },
+                    variables: { title, content, user: getId(), blog: blog.id },
                 });
 
                 history.push(
@@ -119,7 +142,7 @@ function CreatePost({ close, blog }: { close: () => void; blog: string }) {
     );
 }
 
-function BlogPosts({ blog }: { blog: string }) {
+function BlogPosts({ blog }: { blog: BlogInterface }) {
     const { query } = useContext(graphql.Context);
     const [skip, setSkip] = useState(0);
     const [limit, setLimit] = useState(10);
@@ -132,7 +155,7 @@ function BlogPosts({ blog }: { blog: string }) {
             try {
                 const response = await query({
                     query: BLOG_POSTS,
-                    variables: { blog, skip, limit },
+                    variables: { blog: blog.id, skip, limit },
                 });
 
                 setPosts(response.blogPosts);
@@ -191,6 +214,86 @@ function PostItem(props: { post: any }) {
     );
 }
 
+function DeleteBlog(props: { blog: BlogInterface; close: () => void }) {
+    const history = useHistory();
+    const { mutate } = useContext(graphql.Context);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const deleteBlog = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: DELETE_BLOG,
+                variables: { id: props.blog.id },
+            });
+
+            history.push(constants.DASHBOARD_PAGE);
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, []);
+
+    if (loading) {
+        return (
+            <>
+                <Modal.Header>
+                    <Modal.Title>Delete Blog {props.blog.name}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="d-flex flex-column align-items-center">
+                        <Spinner className="mt-5 mb-5" animation="border" />
+                    </div>
+                </Modal.Body>
+            </>
+        );
+    }
+
+    if (error) {
+        <>
+            <Modal.Header>
+                <Modal.Title>Delete Blog {props.blog.name}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div className="d-flex flex-column align-items-center">
+                    <Alert variant="danger text-center" className="mt-3">
+                        {error}
+                    </Alert>
+                </div>
+            </Modal.Body>
+        </>;
+    }
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Delete Blog {props.blog.name}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Alert variant="danger">
+                    Are you sure you want to delete Blog {props.blog.name} ?
+                </Alert>
+                <div className="d-flex justify-content-end">
+                    <Button variant="secondary" onClick={props.close}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="danger"
+                        type="submit"
+                        className="ml-2"
+                        onClick={deleteBlog}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </Modal.Body>
+        </>
+    );
+}
+
 function Blog() {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
@@ -202,9 +305,17 @@ function Blog() {
         isAuthor?: boolean;
         createdAt?: string;
     }>({});
-    const { query } = useContext(graphql.Context);
+    const { query, mutate } = useContext(graphql.Context);
     const [loading, setLoading] = useState(true);
     const [creatingPost, setCreatingPost] = useState(false);
+    const [editedName, setEditedName] = useState("");
+    const [isEditing, setIsEditing] = useState(false);
+    const [error, setError] = useState("");
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    useEffect(() => {
+        setEditedName(blog.name);
+    }, [isEditing, blog]);
 
     useEffect(() => {
         (async () => {
@@ -220,11 +331,41 @@ function Blog() {
                 }
 
                 setBlog(foundBlog);
-            } catch (e) {}
+            } catch (e) {
+                setError(e.message);
+            }
 
             setLoading(false);
         })();
     }, [id]);
+
+    const editBlog = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: EDIT_BLOG,
+                variables: { id: blog.id, name: editedName },
+            });
+
+            setBlog((b) => ({ ...b, name: editedName }));
+            setIsEditing(false);
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, [blog, editedName]);
+
+    if (error) {
+        return (
+            <div className="d-flex flex-column align-items-center">
+                <Alert variant="danger text-center" className="mt-3">
+                    {error}
+                </Alert>
+            </div>
+        );
+    }
 
     if (loading) {
         return (
@@ -245,45 +386,114 @@ function Blog() {
             >
                 <CreatePost
                     close={() => setCreatingPost(false)}
-                    blog={blog.id}
+                    blog={blog}
                 ></CreatePost>
+            </Modal>
+            <Modal
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                size="lg"
+                show={isDeleting}
+                onHide={() => setIsDeleting((x) => !x)}
+            >
+                <DeleteBlog
+                    close={() => setIsDeleting(false)}
+                    blog={blog}
+                ></DeleteBlog>
             </Modal>
             <Container>
                 <Card className="mt-3 p-3">
-                    <h1>{blog.name}</h1>
+                    {isEditing ? (
+                        <InputGroup className="mb-3">
+                            <InputGroup.Prepend>
+                                <InputGroup.Text id="name">
+                                    Name
+                                </InputGroup.Text>
+                            </InputGroup.Prepend>
+                            <FormControl
+                                size="lg"
+                                onChange={(e) => setEditedName(e.target.value)}
+                                value={editedName}
+                                aria-label="Blog Name"
+                                aria-describedby="name"
+                            />
+                        </InputGroup>
+                    ) : (
+                        <h1>{blog.name}</h1>
+                    )}
+
                     <p className="text-muted">- {blog.creator?.email}</p>
                     <p className="text-muted">- {blog.createdAt}</p>
-                    {(!blog.isCreator || blog.isAuthor) && (
+                    {(blog.isCreator || blog.isAuthor) && (
                         <>
                             <hr />
                             <div className="d-flex justify-content-start">
-                                <Button
-                                    variant="outline-primary"
-                                    onClick={() => setCreatingPost((x) => !x)}
-                                >
-                                    Create Post
-                                </Button>
-                                {!blog.isCreator && (
+                                {!isEditing && (
+                                    <Button
+                                        variant="outline-primary"
+                                        onClick={() =>
+                                            setCreatingPost((x) => !x)
+                                        }
+                                    >
+                                        Create Post
+                                    </Button>
+                                )}
+                                {blog.isCreator && (
                                     <>
-                                        <Button
-                                            className="ml-3"
-                                            variant="outline-info"
-                                        >
-                                            Admin
-                                        </Button>
-                                        <Button
-                                            className="ml-3"
-                                            variant="outline-danger"
-                                        >
-                                            Delete
-                                        </Button>
+                                        {isEditing && (
+                                            <>
+                                                <Button
+                                                    variant="warning"
+                                                    onClick={() =>
+                                                        setIsEditing(false)
+                                                    }
+                                                >
+                                                    Cancel Edit
+                                                </Button>
+                                                <Button
+                                                    className="ml-2"
+                                                    variant="primary"
+                                                    onClick={editBlog}
+                                                >
+                                                    Submit
+                                                </Button>
+                                            </>
+                                        )}
+                                        {!isEditing && (
+                                            <>
+                                                <Button
+                                                    className="ml-3"
+                                                    variant="outline-secondary"
+                                                    onClick={() =>
+                                                        setIsEditing((x) => !x)
+                                                    }
+                                                >
+                                                    Edit
+                                                </Button>
+                                                <Button
+                                                    className="ml-3"
+                                                    variant="outline-info"
+                                                >
+                                                    Admin
+                                                </Button>
+                                                <Button
+                                                    className="ml-3"
+                                                    variant="outline-danger"
+                                                    onClick={() =>
+                                                        setIsDeleting(true)
+                                                    }
+                                                >
+                                                    Delete
+                                                </Button>
+                                            </>
+                                        )}
                                     </>
                                 )}
                             </div>
                         </>
                     )}
                 </Card>
-                <BlogPosts blog={blog.id}></BlogPosts>
+                <BlogPosts blog={blog}></BlogPosts>
             </Container>
         </>
     );
