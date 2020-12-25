@@ -20,6 +20,7 @@ import {
     COMMENT_ON_POST,
     DELETE_COMMENT,
     EDIT_POST,
+    DELETE_POST,
 } from "../queries";
 
 interface Comment {
@@ -44,6 +45,7 @@ interface PostInterface {
     createdAt?: string;
     canEdit?: boolean;
     canDelete?: boolean;
+    blog?: { id: string };
 }
 
 function CreateComment({
@@ -209,6 +211,86 @@ function DeleteComment(props: {
                         type="submit"
                         className="ml-2"
                         onClick={deleteComment}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </Modal.Body>
+        </>
+    );
+}
+
+function DeletePost(props: { post: PostInterface; close: () => void }) {
+    const history = useHistory();
+    const { mutate } = useContext(graphql.Context);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const deletePost = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: DELETE_POST,
+                variables: { id: props.post.id },
+            });
+
+            history.push(constants.BLOG_PAGE + "/" + props.post?.blog?.id);
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, []);
+
+    if (loading) {
+        return (
+            <>
+                <Modal.Header>
+                    <Modal.Title>Delete Post {props.post.title}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="d-flex flex-column align-items-center">
+                        <Spinner className="mt-5 mb-5" animation="border" />
+                    </div>
+                </Modal.Body>
+            </>
+        );
+    }
+
+    if (error) {
+        <>
+            <Modal.Header>
+                <Modal.Title>Delete Post {props.post.title}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div className="d-flex flex-column align-items-center">
+                    <Alert variant="danger text-center" className="mt-3">
+                        {error}
+                    </Alert>
+                </div>
+            </Modal.Body>
+        </>;
+    }
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Delete Post {props.post.title}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Alert variant="danger">
+                    Are you sure you want to delete Post {props.post.title} ?
+                </Alert>
+                <div className="d-flex justify-content-end">
+                    <Button variant="secondary" onClick={props.close}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="danger"
+                        type="submit"
+                        className="ml-2"
+                        onClick={deletePost}
                     >
                         Delete
                     </Button>
@@ -442,6 +524,7 @@ function Post() {
     const [isEditing, setIsEditing] = useState(false);
     const [editedMarkdown, setEditedMarkdown] = useState("");
     const [editedTitle, setEditedTitle] = useState("");
+    const [deletingPost, setDeletingPost] = useState(false);
 
     useEffect(() => {
         setEditedMarkdown(post.content);
@@ -505,6 +588,18 @@ function Post() {
 
     return (
         <Container>
+            <Modal
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                size="lg"
+                show={deletingPost}
+                onHide={() => setDeletingPost((x) => !x)}
+            >
+                <DeletePost
+                    post={post}
+                    close={() => setDeletingPost(false)}
+                ></DeletePost>
+            </Modal>
             <Card className="mt-3 p-3">
                 {isEditing ? (
                     <InputGroup className="mb-3">
@@ -562,6 +657,7 @@ function Post() {
                                 <Button
                                     variant="outline-danger"
                                     className="ml-2"
+                                    onClick={() => setDeletingPost(true)}
                                 >
                                     Delete Post
                                 </Button>

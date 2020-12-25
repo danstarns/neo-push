@@ -116,6 +116,9 @@ export const POST = gql`
             createdAt
             canEdit
             canDelete
+            blog {
+                id
+            }
         }
     }
 `;
@@ -199,6 +202,17 @@ export const EDIT_POST = gql`
             update: { content: $content, title: $title }
         ) {
             id
+        }
+    }
+`;
+
+export const DELETE_POST = gql`
+    mutation deletePost($id: ID) {
+        deleteComments(where: { post: { id: $id } }) {
+            nodesDeleted
+        }
+        deletePosts(where: { id: $id }) {
+            nodesDeleted
         }
     }
 `;
