@@ -181,3 +181,11 @@ export const EDIT_COMMENT = gql`
         }
     }
 `;
+
+export const DELETE_COMMENT = gql`
+    mutation deleteComment($id: ID) {
+        deleteComments(where: { id: $id }) {
+            nodesDeleted
+        }
+    }
+`;

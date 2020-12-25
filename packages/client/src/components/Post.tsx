@@ -4,16 +4,16 @@ import {
     Spinner,
     Container,
     Card,
-    Row,
     Button,
     Form,
+    Modal,
 } from "react-bootstrap";
 import * as markdown from "./Markdown";
 import { EDIT_COMMENT, POST } from "../queries";
 import { graphql, auth } from "../contexts";
 import { useParams, useHistory } from "react-router-dom";
 import constants from "../constants";
-import { POST_COMMENTS, COMMENT_ON_POST } from "../queries";
+import { POST_COMMENTS, COMMENT_ON_POST, DELETE_COMMENT } from "../queries";
 
 interface Comment {
     id: string;
@@ -114,6 +114,90 @@ function CreateComment({
     );
 }
 
+function DeleteComment(props: {
+    comment: Comment;
+    setComments: (cb: (comments: Comment[]) => any) => void;
+    close: () => void;
+}) {
+    const { mutate } = useContext(graphql.Context);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+
+    const deleteComment = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: DELETE_COMMENT,
+                variables: { id: props.comment.id },
+            });
+
+            props.setComments((c) =>
+                c.filter((x) => x.id !== props.comment.id)
+            );
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, []);
+
+    if (loading) {
+        return (
+            <>
+                <Modal.Header>
+                    <Modal.Title>Deleting Comment</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <div className="d-flex flex-column align-items-center">
+                        <Spinner className="mt-5 mb-5" animation="border" />
+                    </div>
+                </Modal.Body>
+            </>
+        );
+    }
+
+    if (error) {
+        <>
+            <Modal.Header>
+                <Modal.Title>Deleting Comment</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <div className="d-flex flex-column align-items-center">
+                    <Alert variant="danger text-center" className="mt-3">
+                        {error}
+                    </Alert>
+                </div>
+            </Modal.Body>
+        </>;
+    }
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Delete Comment</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Alert variant="danger">
+                    Are you sure you want to delete this comment ?
+                </Alert>
+                <div className="d-flex justify-content-end">
+                    <Button variant="secondary" onClick={props.close}>
+                        Cancel
+                    </Button>
+                    <Button
+                        variant="danger"
+                        type="submit"
+                        className="ml-2"
+                        onClick={deleteComment}
+                    >
+                        Delete
+                    </Button>
+                </div>
+            </Modal.Body>
+        </>
+    );
+}
 function CommentItem(props: {
     comment: Comment;
     setComments: (cb: (comments: Comment[]) => any) => void;
@@ -125,6 +209,7 @@ function CommentItem(props: {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const [editedMarkdown, setEditedMarkdown] = useState(props.comment.content);
+    const [deletingComment, setDeletingComment] = useState(false);
 
     useEffect(() => {
         setLoading(false);
@@ -165,6 +250,19 @@ function CommentItem(props: {
 
     return (
         <Card className="mt-3 p-3">
+            <Modal
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                size="lg"
+                show={deletingComment}
+                onHide={() => setDeletingComment((x) => !x)}
+            >
+                <DeleteComment
+                    setComments={props.setComments}
+                    comment={props.comment}
+                    close={() => setDeletingComment(false)}
+                ></DeleteComment>
+            </Modal>
             <p className="text-muted">- {props.comment.author.email}</p>
             <p className="text-muted">- {props.comment.createdAt}</p>
             {isEditing ? (
@@ -204,7 +302,11 @@ function CommentItem(props: {
             {(props.comment.canDelete || canEdit) && (
                 <div className="d-flex justify-content-start">
                     {props.comment.canDelete && (
-                        <Button variant="outline-danger" size="sm">
+                        <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => setDeletingComment(true)}
+                        >
                             Delete
                         </Button>
                     )}
