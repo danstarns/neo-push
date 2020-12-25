@@ -7,13 +7,20 @@ import {
     Button,
     Form,
     Modal,
+    InputGroup,
+    FormControl,
 } from "react-bootstrap";
 import * as markdown from "./Markdown";
 import { EDIT_COMMENT, POST } from "../queries";
 import { graphql, auth } from "../contexts";
 import { useParams, useHistory } from "react-router-dom";
 import constants from "../constants";
-import { POST_COMMENTS, COMMENT_ON_POST, DELETE_COMMENT } from "../queries";
+import {
+    POST_COMMENTS,
+    COMMENT_ON_POST,
+    DELETE_COMMENT,
+    EDIT_POST,
+} from "../queries";
 
 interface Comment {
     id: string;
@@ -25,6 +32,18 @@ interface Comment {
     post: any;
     createdAt: string;
     canDelete: boolean;
+}
+
+interface PostInterface {
+    id?: string;
+    title?: string;
+    content?: string;
+    author?: { id: string; email: string };
+    isCreator?: boolean;
+    isAuthor?: boolean;
+    createdAt?: string;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 function CreateComment({
@@ -198,6 +217,7 @@ function DeleteComment(props: {
         </>
     );
 }
+
 function CommentItem(props: {
     comment: Comment;
     setComments: (cb: (comments: Comment[]) => any) => void;
@@ -214,6 +234,7 @@ function CommentItem(props: {
     useEffect(() => {
         setLoading(false);
         setError("");
+        setEditedMarkdown(props.comment.content);
     }, [isEditing]);
 
     const editComment = useCallback(async () => {
@@ -301,18 +322,8 @@ function CommentItem(props: {
             )}
             {(props.comment.canDelete || canEdit) && (
                 <div className="d-flex justify-content-start">
-                    {props.comment.canDelete && (
-                        <Button
-                            variant="outline-danger"
-                            size="sm"
-                            onClick={() => setDeletingComment(true)}
-                        >
-                            Delete
-                        </Button>
-                    )}
                     {canEdit && !isEditing && (
                         <Button
-                            className="ml-2"
                             variant="outline-secondary"
                             size="sm"
                             onClick={() => setIsEditing(true)}
@@ -324,7 +335,6 @@ function CommentItem(props: {
                     {isEditing && (
                         <>
                             <Button
-                                className="ml-2"
                                 variant="warning"
                                 size="sm"
                                 onClick={() => setIsEditing(false)}
@@ -340,6 +350,17 @@ function CommentItem(props: {
                                 Submit
                             </Button>
                         </>
+                    )}
+
+                    {props.comment.canDelete && !isEditing && (
+                        <Button
+                            className="ml-2"
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={() => setDeletingComment(true)}
+                        >
+                            Delete
+                        </Button>
                     )}
                 </div>
             )}
@@ -390,7 +411,7 @@ function PostComments({
     }
 
     if (!comments.length) {
-        return <></>;
+        return <h2>Comments</h2>;
     }
 
     return (
@@ -413,19 +434,19 @@ function PostComments({
 function Post() {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
-    const [post, setPost] = useState<{
-        id?: string;
-        title?: string;
-        content?: string;
-        author?: { id: string; email: string };
-        isCreator?: boolean;
-        isAuthor?: boolean;
-        createdAt?: string;
-    }>({});
-    const { query } = useContext(graphql.Context);
+    const [post, setPost] = useState<PostInterface>({});
+    const { query, mutate } = useContext(graphql.Context);
     const { isLoggedIn } = useContext(auth.Context);
     const [loading, setLoading] = useState(true);
     const [comments, setComments] = useState([]);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editedMarkdown, setEditedMarkdown] = useState("");
+    const [editedTitle, setEditedTitle] = useState("");
+
+    useEffect(() => {
+        setEditedMarkdown(post.content);
+        setEditedTitle(post.title);
+    }, [isEditing, post]);
 
     useEffect(() => {
         (async () => {
@@ -435,17 +456,44 @@ function Post() {
                     variables: { id },
                 });
 
-                const foundPost = response.Posts[0];
+                const foundPost = response.Posts[0] as PostInterface;
                 if (!foundPost) {
                     history.push(constants.DASHBOARD_PAGE);
                 }
 
+                setEditedMarkdown(foundPost.content);
                 setPost(foundPost);
             } catch (e) {}
 
             setLoading(false);
         })();
     }, [id]);
+
+    const editPost = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            await mutate({
+                mutation: EDIT_POST,
+                variables: {
+                    id: id,
+                    content: editedMarkdown,
+                    title: editedTitle,
+                },
+            });
+
+            setPost((p) => ({
+                ...p,
+                content: editedMarkdown,
+                title: editedTitle,
+            }));
+        } catch (error) {
+            setIsEditing(false);
+        }
+
+        setLoading(false);
+        setIsEditing(false);
+    }, [editedMarkdown, editedTitle, id]);
 
     if (loading) {
         return (
@@ -458,24 +506,83 @@ function Post() {
     return (
         <Container>
             <Card className="mt-3 p-3">
-                <h1>{post.title}</h1>
+                {isEditing ? (
+                    <InputGroup className="mb-3">
+                        <InputGroup.Prepend>
+                            <InputGroup.Text id="title">Title</InputGroup.Text>
+                        </InputGroup.Prepend>
+                        <FormControl
+                            size="lg"
+                            onChange={(e) => setEditedTitle(e.target.value)}
+                            value={editedTitle}
+                            aria-label="Post Title"
+                            aria-describedby="title"
+                        />
+                    </InputGroup>
+                ) : (
+                    <h1>{post.title}</h1>
+                )}
+
                 <p className="text-muted">- {post.author.email}</p>
                 <p className="text-muted">- {post.createdAt}</p>
-                {post.isAuthor && (
+                {(post.canDelete || post.canEdit) && (
                     <>
                         <hr />
                         <div className="d-flex justify-content-start">
-                            <Button variant="outline-danger">
-                                Delete Post
-                            </Button>
+                            {post.canEdit && !isEditing && (
+                                <div className="d-flex justify-content-start">
+                                    <Button
+                                        variant="outline-secondary"
+                                        onClick={() => setIsEditing(true)}
+                                    >
+                                        Edit Post
+                                    </Button>
+                                </div>
+                            )}
+
+                            {isEditing && (
+                                <>
+                                    <Button
+                                        variant="warning"
+                                        onClick={() => setIsEditing(false)}
+                                    >
+                                        Cancel Edit
+                                    </Button>
+                                    <Button
+                                        className="ml-2"
+                                        variant="primary"
+                                        onClick={editPost}
+                                    >
+                                        Submit
+                                    </Button>
+                                </>
+                            )}
+
+                            {post.canDelete && !isEditing && (
+                                <Button
+                                    variant="outline-danger"
+                                    className="ml-2"
+                                >
+                                    Delete Post
+                                </Button>
+                            )}
                         </div>
                     </>
                 )}
             </Card>
 
-            <Card className="mt-3 p-3">
-                <markdown.Render markdown={post.content} />
-            </Card>
+            {isEditing ? (
+                <Card className="mt-3 p-3">
+                    <markdown.Editor
+                        markdown={editedMarkdown}
+                        onChange={(mk: string) => setEditedMarkdown(mk)}
+                    ></markdown.Editor>
+                </Card>
+            ) : (
+                <Card className="mt-3 p-3">
+                    <markdown.Render markdown={post.content} />
+                </Card>
+            )}
 
             <Card className="mt-3 p-3 mb-3">
                 <PostComments

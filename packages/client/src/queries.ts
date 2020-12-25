@@ -114,6 +114,8 @@ export const POST = gql`
                 email
             }
             createdAt
+            canEdit
+            canDelete
         }
     }
 `;
@@ -186,6 +188,17 @@ export const DELETE_COMMENT = gql`
     mutation deleteComment($id: ID) {
         deleteComments(where: { id: $id }) {
             nodesDeleted
+        }
+    }
+`;
+
+export const EDIT_POST = gql`
+    mutation editPost($id: ID, $content: String, $title: String) {
+        updatePosts(
+            where: { id: $id }
+            update: { content: $content, title: $title }
+        ) {
+            id
         }
     }
 `;
