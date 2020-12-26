@@ -1,6 +1,14 @@
 # neo-push
 
-Example blog site built with `@neo4j/graphql` & React.js.
+Example blog site built with `@neo4j/graphql` & React.js. This application showcases features of `@neo4j/graphql` such as;
+
+1. Nested Mutations
+2. @auth directive
+3. OGM(Object Graph Mapper)
+
+There are only 2 custom resolvers in the server; sign up plus sign in. The lack of custom logic is showcasing how quickly developers can build, both powerful and secure, applications ontop of Neo4j.
+
+> Its worth nothing this entire application contains zero 'raw' cypher. All interaction's with the database are done through the generated GraphQL Schema via either the OGM or Apollo Server.
 
 ```graphql
 type User {
@@ -38,6 +46,18 @@ type Comment {
 
 ## Getting Started
 
+If you want to run this Blog locally follow the steps below. When it comes to [Configure environment variables](#how-to-configure-environment-variables) you will need a [running Neo4j instance](#how-to-start-neo4j) to point to.
+
+### How to configure environment variables.
+
+Each package contains a `./env.example` file. Copy this file, to the same directory, at `./.env` and adjust configuration to suit your local machine although locals may be fine.
+
+### How to start neo4j.
+
+There are many ways to get started with neo4j such as; [Neo4j Sandbox](https://neo4j.com/sandbox/), [Neo4j Desktop](https://neo4j.com/developer/neo4j-desktop/) or [Docker](https://neo4j.com/developer/docker/).
+
+### Steps
+
 Clone the repo;
 
 ```
@@ -73,9 +93,3 @@ $ cd packages/server && npm run test
 Navigate to http://localhost:4000 and sign up!
 
 ![sign up image](assets/sign-up-screenshot.jpg)
-
-### FAQ
-
-#### How to configure environment variables.
-
-Each package contains a `./env.example` file. Copy this file, to the same directory, at `./.env` and adjust configuration to suit your local machine although locals may be fine.
