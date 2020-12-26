@@ -70,7 +70,7 @@ export const typeDefs = gql`
             rules: [
                 { operations: ["read"], allow: "*" }
                 { operations: ["create"], allow: "*" }
-                { operations: ["connect"], allow: "*" }
+                { operations: ["connect"], isAuthenticated: true }
                 {
                     operations: ["update"]
                     allow: { id: "sub" }
