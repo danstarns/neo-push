@@ -6,7 +6,7 @@ Example blog site built with `@neo4j/graphql` & React.js. This application showc
 2. @auth directive
 3. OGM(Object Graph Mapper)
 
-There are only 2 custom resolvers in the server; sign up plus sign in. The lack of custom logic is showcasing how quickly developers can build, both powerful and secure, applications ontop of Neo4j.
+There are only two custom resolvers in the server; sign up plus sign in. The lack of custom logic is showcasing how quickly developers can build, both powerful and secure, applications ontop of Neo4j.
 
 > Its worth nothing this entire application contains zero 'raw' cypher. All interaction's with the database are done through the generated GraphQL Schema via either the OGM or Apollo Server.
 
@@ -48,11 +48,11 @@ type Comment {
 
 If you want to run this Blog locally follow the steps below. When it comes to [Configure environment variables](#how-to-configure-environment-variables) you will need a [running Neo4j instance](#how-to-start-neo4j) to point to.
 
-### How to configure environment variables.
+### How to configure environment variables ?
 
-Each package contains a `./env.example` file. Copy this file, to the same directory, at `./.env` and adjust configuration to suit your local machine although locals may be fine.
+Each package contains a `./env.example` file. Copy this file, to the same directory, at `./.env` and adjust configuration to suit your local machine although the defaults may be fine.
 
-### How to start neo4j.
+### How to start Neo4j ?
 
 There are many ways to get started with neo4j such as; [Neo4j Sandbox](https://neo4j.com/sandbox/), [Neo4j Desktop](https://neo4j.com/developer/neo4j-desktop/) or [Docker](https://neo4j.com/developer/docker/).
 
@@ -84,19 +84,13 @@ Run the server on;
 $ npm run server:dev
 ```
 
-Run server tests on;
-
-```
-$ cd packages/server && npm run test
-```
-
 Navigate to http://localhost:4000 and sign up!
 
 ![sign up image](assets/sign-up-screenshot.jpg)
 
 ## Authentication
 
-This application has 2 custom resolvers; sign in and sign up. In the resolvers we return a [JWT](https://jwt.io/). This JWT is stored in local storage on the client. The contents of the JWT is something like;
+This application has two custom resolvers; sign in and sign up. In the resolvers we return a [JWT](https://jwt.io/). This JWT is stored in local storage on the client. The contents of the JWT is something like;
 
 ```
 {
