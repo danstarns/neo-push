@@ -10,6 +10,9 @@ There are only two custom resolvers in the server; sign up plus sign in. The lac
 
 > Its worth nothing this entire application contains zero 'raw' cypher. All interaction's with the database are done through the generated GraphQL Schema via either the OGM or Apollo Server.
 
+![arrows of data](assets/arrows.png)
+**Diagram from https://arrows.app/**
+
 ```graphql
 type User {
     id: ID!
