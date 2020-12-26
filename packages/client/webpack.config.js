@@ -57,11 +57,9 @@ module.exports = {
             systemvars: true
         })
     ],
-    ...(process.env.NODE_ENV === "development" ? {
-        devServer: {
-            contentBase: path.join(__dirname, 'web-dist'),
-            compress: true,
-            port: Number(process.env.DEV_SERVER_PORT || 4000)
-        }
-    } : {})
+    devServer: {
+        contentBase: path.join(__dirname, 'web-dist'),
+        compress: true,
+        port: Number(process.env.DEV_SERVER_PORT || 4000)
+    }
 }
