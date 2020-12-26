@@ -77,6 +77,10 @@ export const BLOG = gql`
                 id
                 email
             }
+            authors {
+                id
+                email
+            }
             createdAt
             isCreator
             isAuthor
@@ -237,6 +241,32 @@ export const DELETE_POST = gql`
         }
         deletePosts(where: { id: $id }) {
             nodesDeleted
+        }
+    }
+`;
+
+export const ASSIGN_BLOG_AUTHOR = gql`
+    mutation assignBlogAuthor($blog: ID, $authorEmail: String) {
+        updateBlogs(
+            where: { id: $blog }
+            connect: { authors: { where: { email: $authorEmail } } }
+        ) {
+            authors {
+                email
+            }
+        }
+    }
+`;
+
+export const REVOKE_BLOG_AUTHOR = gql`
+    mutation revokeBlogAuthor($blog: ID, $authorEmail: String) {
+        updateBlogs(
+            where: { id: $blog }
+            disconnect: { authors: { where: { email: $authorEmail } } }
+        ) {
+            authors {
+                email
+            }
         }
     }
 `;

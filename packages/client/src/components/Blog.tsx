@@ -22,8 +22,15 @@ import {
     BLOG_POSTS,
     EDIT_BLOG,
     DELETE_BLOG,
+    ASSIGN_BLOG_AUTHOR,
+    REVOKE_BLOG_AUTHOR,
 } from "../queries";
 import * as markdown from "./Markdown";
+
+type Author = {
+    id: string;
+    email: string;
+};
 
 interface BlogInterface {
     id?: string;
@@ -32,6 +39,7 @@ interface BlogInterface {
     isCreator?: boolean;
     isAuthor?: boolean;
     createdAt?: string;
+    authors?: Author[];
 }
 
 function CreatePost({
@@ -294,6 +302,138 @@ function DeleteBlog(props: { blog: BlogInterface; close: () => void }) {
     );
 }
 
+function AdminModal(props: {
+    blog: BlogInterface;
+    close: () => void;
+    setBlog: (cb: (b: BlogInterface) => BlogInterface) => void;
+}) {
+    const [authorEmail, setAuthorEmail] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const { mutate } = useContext(graphql.Context);
+
+    const assignAuthor = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const response = await mutate({
+                mutation: ASSIGN_BLOG_AUTHOR,
+                variables: { blog: props.blog.id, authorEmail },
+            });
+
+            props.setBlog((b) => ({
+                ...b,
+                authors: response.updateBlogs[0].authors,
+            }));
+
+            setAuthorEmail("");
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, [authorEmail]);
+
+    const revokeAuthor = useCallback(async (email: string) => {
+        setLoading(true);
+
+        try {
+            const response = await mutate({
+                mutation: REVOKE_BLOG_AUTHOR,
+                variables: { blog: props.blog.id, email },
+            });
+
+            props.setBlog((b) => ({
+                ...b,
+                authors: response.updateBlogs[0].authors,
+            }));
+
+            setAuthorEmail("");
+        } catch (e) {
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, []);
+
+    return (
+        <>
+            <Modal.Header closeButton>
+                <Modal.Title>Blog Admin: {props.blog.name}</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <h4>Authors</h4>
+
+                {error && (
+                    <div className="d-flex flex-column align-items-center">
+                        <Alert variant="danger text-center" className="mt-3">
+                            {error}
+                        </Alert>
+                    </div>
+                )}
+
+                {loading && (
+                    <div className="d-flex flex-column align-items-center">
+                        <Spinner className="m-5" animation="border" />
+                    </div>
+                )}
+
+                {!loading && (
+                    <Row>
+                        {(props.blog.authors || []).map((a) => (
+                            <Col md={{ span: 6 }} className="p-0">
+                                <Card className="m-3">
+                                    <div className="d-flex justify-content-center align-items-center p-2">
+                                        <div>
+                                            <p className="mb-0">{a.email}</p>
+                                        </div>
+                                        <div>
+                                            <Button
+                                                variant="outline-danger"
+                                                size="sm"
+                                                className="ml-3"
+                                                onClick={() =>
+                                                    revokeAuthor(a.email)
+                                                }
+                                            >
+                                                Revoke
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </Card>
+                            </Col>
+                        ))}
+                    </Row>
+                )}
+
+                <hr></hr>
+
+                <h4>Assign Author</h4>
+                <div className="d-flex mt-3">
+                    <div className="flex-grow-1">
+                        <FormControl
+                            disabled={loading}
+                            placeholder="Author Email"
+                            value={authorEmail}
+                            aria-label="Author Email"
+                            onChange={(e) => setAuthorEmail(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <Button
+                            disabled={loading}
+                            className="ml-3"
+                            onClick={assignAuthor}
+                        >
+                            Submit
+                        </Button>
+                    </div>
+                </div>
+            </Modal.Body>
+        </>
+    );
+}
+
 function Blog() {
     const { id } = useParams<{ id: string }>();
     const history = useHistory();
@@ -312,6 +452,7 @@ function Blog() {
     const [isEditing, setIsEditing] = useState(false);
     const [error, setError] = useState("");
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
     useEffect(() => {
         setEditedName(blog.name);
@@ -401,6 +542,19 @@ function Blog() {
                     blog={blog}
                 ></DeleteBlog>
             </Modal>
+            <Modal
+                aria-labelledby="contained-modal-title-vcenter"
+                centered
+                size="lg"
+                show={isAdminModalOpen}
+                onHide={() => setIsAdminModalOpen((x) => !x)}
+            >
+                <AdminModal
+                    setBlog={setBlog}
+                    close={() => setCreatingPost(false)}
+                    blog={blog}
+                ></AdminModal>
+            </Modal>
             <Container>
                 <Card className="mt-3 p-3">
                     {isEditing ? (
@@ -473,6 +627,11 @@ function Blog() {
                                                 <Button
                                                     className="ml-3"
                                                     variant="outline-info"
+                                                    onClick={() =>
+                                                        setIsAdminModalOpen(
+                                                            true
+                                                        )
+                                                    }
                                                 >
                                                     Admin
                                                 </Button>
