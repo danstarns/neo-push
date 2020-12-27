@@ -153,25 +153,34 @@ function CreatePost({
 function BlogPosts({ blog }: { blog: BlogInterface }) {
     const { query } = useContext(graphql.Context);
     const [skip, setSkip] = useState(0);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [hasMore, setHasMore] = useState(false);
     const [posts, setPosts] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const getPosts = useCallback(async () => {
+        try {
+            const response = await query({
+                query: BLOG_POSTS,
+                variables: {
+                    blog: blog.id,
+                    skip: posts.length,
+                    limit,
+                    hasNextPostsSkip:
+                        posts.length === 0 ? limit : posts.length + 1,
+                },
+            });
+
+            setHasMore(Boolean(response.hasNextPosts.length));
+            setPosts((p) => [...p, ...response.blogPosts]);
+        } catch (e) {}
+
+        setLoading(false);
+    }, [skip, posts]);
+
     useEffect(() => {
-        (async () => {
-            try {
-                const response = await query({
-                    query: BLOG_POSTS,
-                    variables: { blog: blog.id, skip, limit },
-                });
-
-                setPosts(response.blogPosts);
-            } catch (e) {}
-
-            setLoading(false);
-        })();
-    }, [blog, skip, limit]);
+        getPosts();
+    }, [skip]);
 
     if (loading) {
         <Card className="mt-3 p-3">
@@ -194,9 +203,13 @@ function BlogPosts({ blog }: { blog: BlogInterface }) {
                     <PostItem key={post.id} post={post}></PostItem>
                 ))}
             </Row>
-            <div className="d-flex justify-content-center w-100">
-                <Button>Load More</Button>
-            </div>
+            {hasMore && (
+                <div className="d-flex justify-content-center w-100">
+                    <Button onClick={() => setSkip((s) => s + 1)}>
+                        Load More
+                    </Button>
+                </div>
+            )}
         </Card>
     );
 }
