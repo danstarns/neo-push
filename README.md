@@ -112,9 +112,9 @@ Thats all we need for authentication & more on authorization in the following se
 
 ## Users
 
-At the core of the app you cant anything without a user. To keep things simple the UI doesn't have any profile page ect ect.
+At the core of the app but to keep things simple the UI doesn't have any profile page ect ect.
 
-### typeDefs
+### Type Definitions
 
 ```graphql
 type User @timestamps {
@@ -129,7 +129,7 @@ extend type User
     @auth(
         rules: [
             { operations: ["read"], allow: "*" }
-            { operations: ["create"], allow: "*" }
+            { operations: ["create"], isAuthenticated: false }
             { operations: ["connect"], isAuthenticated: true }
             {
                 operations: ["update"]
@@ -175,15 +175,15 @@ In the typeDefs above you'll notice the `@auth` directive. Here we explain each 
 { operations: ["read"], allow: "*" }
 ```
 
-Here is stating that all users even unauthenticated can read a user for example showing the author of a post.
+Here is stating that all users even unauthenticated can read a user, for example showing the author of a post.
 
 #### create
 
 ```
-{ operations: ["create"], allow: "*" }
+{ operations: ["create"], isAuthenticated: false }
 ```
 
-Here is stating that all users even unauthenticated can create a User for example signing up.
+Here is stating that all unauthenticated can create a user, for example signing up.
 
 #### connect
 
@@ -191,7 +191,7 @@ Here is stating that all users even unauthenticated can create a User for exampl
 { operations: ["connect"], isAuthenticated: true }
 ```
 
-Here is stating that all users can create connections to a User for example users assigning another as a author of a blog.
+Here is stating that all users can create connections to a user, for example a user assigning another as an author of a blog.
 
 #### update
 
@@ -242,11 +242,13 @@ Here only the user themselves can delete themselves.
 }
 ```
 
-Here we are using complex relationship filter to ensure that only; the user themselves, and any author or creator, in the related blogs, can disconnect from a user. This allows blog creators and authors to delete user comments on posts and lets the creator of a blog to revoke a users author rights.
+Here we are using complex relationship filtering to ensure that only; the user themselves, and any author or creator, in the related blogs, can disconnect from a user. This allows blog creators and authors to delete user comments on posts and lets the creator of a blog to revoke a users author rights.
 
 ## Blogs
 
-### typeDefs
+Before you can create a post you must create a blog. Users can have many blogs with many post. Each blog can have an array of authors, whom can post to the blog.
+
+### Type Definitions
 
 ```graphql
 type Blog @timestamps {
@@ -277,7 +279,7 @@ extend type Blog
     @auth(
         rules: [
             { operations: ["create"], bind: { creator: { id: "sub" } } }
-            { operations: ["read"], allow: "*" }
+            { operations: ["read"], isAuthenticated: false }
             {
                 operations: ["update"]
                 allow: { creator: { id: "sub" } }
@@ -306,11 +308,80 @@ extend type Blog
 
 ### @cypher
 
-In the typeDefs above you will notice two `@cypher` directives being used; `isCreator` and `isAuthor` this custom cypher returns a boolean and makes the client side cleaner.
+In the typeDefs above you will notice two `@cypher` directives being used; `isCreator` and `isAuthor` this custom cypher returns a boolean and makes the client side cleaner. If noticed there are two 'global' params in the `@cypher` directive; `this` being the currently resolved node & `jwt` being the decoded JWT.
 
 ### Authorization
 
-TODO AUTH
+Here some of the auth rules are explained.
+
+#### create
+
+```
+{ operations: ["create"], bind: { creator: { id: "sub" } } }
+```
+
+Here we are binding the `creator.id` property of a blog to the logged in user, this implies that only authenticated users can create blogs.
+
+#### read
+
+```
+{ operations: ["read"], isAuthenticated: false }
+```
+
+Here un-Authenticated users can read blogs.
+
+#### update
+
+```
+{
+    operations: ["update"]
+    allow: { creator: { id: "sub" } }
+    bind: { creator: { id: "sub" } }
+}
+```
+
+Only the creator can edit a blog and they cannot point the creator to someone else.
+
+#### connect
+
+```
+{
+    operations: ["connect"]
+    allow: {
+        OR: [
+            { creator: { id: "sub" } }
+            { authors: { id: "sub" } }
+        ]
+    }
+}
+```
+
+Both creators and assigned authors of a blog can connect to it. This means creators and authors can connect posts to the blog.
+
+#### disconnect
+
+```
+{
+    operations: ["disconnect"]
+    allow: {
+        OR: [
+            { creator: { id: "sub" } }
+            { authors: { id: "sub" } }
+            { posts: { author: { id: "sub" } } }
+        ]
+    }
+}
+```
+
+Creators & authors of the blog can disconnect from it. This allows them to delete there own posts.
+
+#### delete
+
+```
+{ operations: ["delete"], allow: { creator: { id: "sub" } } }
+```
+
+Only the creators of a blog can delete it.
 
 ### Dashboard
 
@@ -318,12 +389,10 @@ Once logged in users are directed to the dashboard page;
 
 ![dashboard](assets/dashboard.jpg)
 
-Lets take a closer look at some of the queries being preformed here;
-
 #### My Blogs
 
 ```graphql
-query myBlogs($id: ID, $skip: Int, $limit: Int) {
+query myBlogs($id: ID, $skip: Int, $limit: Int, $hasNextBlogsSkip: Int) {
     myBlogs: Blogs(
         where: { OR: [{ creator: { id: $id } }, { authors: { id: $id } }] }
         options: { limit: $limit, skip: $skip, sort: createdAt_DESC }
@@ -336,24 +405,38 @@ query myBlogs($id: ID, $skip: Int, $limit: Int) {
         }
         createdAt
     }
+    hasNextBlogs: Blogs(
+        where: { OR: [{ creator: { id: $id } }, { authors: { id: $id } }] }
+        options: { limit: 1, skip: $hasNextBlogsSkip, sort: createdAt_DESC }
+    ) {
+        id
+        createdAt
+    }
 }
 ```
 
-#### Recently Updated
+**Pagination**
+
+⚠ Page info such as Relay spec is not supported in the current version of `@neo4j/graphql` so with the **My Blogs** and **Recently Updated Blogs** we query twice asking for the next item, to determine if there is a next page. Using this technique we can paginate the blog lists.
+
+> Image showing pagination with limit of 1, in the app its default to 10.
+
+> ![blogs pagination](assets/blog-pagination.gif)
+
+### Create Blog
+
+From the dashboard you can create a blog.
+
+![create blog gif](assets/create-blog.gif)
 
 ```graphql
-query recentlyUpdatedBlogs($skip: Int, $limit: Int) {
-    recentlyUpdatedBlogs: Blogs(
-        options: { limit: $limit, skip: $skip, sort: updatedAt_DESC }
+mutation($name: String!, $sub: ID) {
+    createBlogs(
+        input: [{ name: $name, creator: { connect: { where: { id: $sub } } } }]
     ) {
         id
         name
-        creator {
-            id
-            email
-        }
         createdAt
-        updatedAt
     }
 }
 ```
