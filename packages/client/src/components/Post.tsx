@@ -454,45 +454,59 @@ function PostComments({
 }) {
     const { query } = useContext(graphql.Context);
     const [skip, setSkip] = useState(0);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [hasMore, setHasMore] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+
+    const getComments = useCallback(async () => {
+        try {
+            const response = await query({
+                query: POST_COMMENTS,
+                variables: {
+                    post,
+                    skip: comments.length,
+                    limit,
+                    hasNextCommentsSkip:
+                        comments.length === 0 ? limit : comments.length + 1,
+                },
+            });
+
+            setHasMore(Boolean(response.hasNextComments.length));
+
+            setComments((c: Comment[]) => [...c, ...response.postComments]);
+        } catch (e) {
+            console.error(e);
+            setError(e.message);
+        }
+
+        setLoading(false);
+    }, [skip]);
 
     useEffect(() => {
-        (async () => {
-            try {
-                const response = await query({
-                    query: POST_COMMENTS,
-                    variables: { post, skip, limit },
-                });
+        getComments();
+    }, [skip]);
 
-                setComments((c: Comment[]) => {
-                    const newComments = [
-                        ...c,
-                        ...(response.postComments as Comment[]),
-                    ];
-
-                    const uniqueComments = Array.from(
-                        new Set(newComments.map((x) => x.id))
-                    );
-
-                    return uniqueComments.map((id) =>
-                        newComments.find((x) => x.id === id)
-                    );
-                });
-            } catch (e) {}
-
-            setLoading(false);
-        })();
-    }, [post, skip, limit, setComments]);
+    if (error) {
+        return (
+            <Card className="mt-3 p-3">
+                <h2>Comments</h2>
+                <div className="d-flex flex-column align-items-center">
+                    <Alert variant="danger">{error}</Alert>
+                </div>
+            </Card>
+        );
+    }
 
     if (loading) {
-        <Card className="mt-3 p-3">
-            <h2>Comments</h2>
-            <div className="d-flex flex-column align-items-center">
-                <Spinner className="mt-5" animation="border" />
-            </div>
-        </Card>;
+        return (
+            <Card className="mt-3 p-3">
+                <h2>Comments</h2>
+                <div className="d-flex flex-column align-items-center">
+                    <Spinner className="mt-5" animation="border" />
+                </div>
+            </Card>
+        );
     }
 
     if (!comments.length) {
@@ -509,9 +523,13 @@ function PostComments({
                     setComments={setComments}
                 ></CommentItem>
             ))}
-            <div className="d-flex justify-content-center w-100 mt-3">
-                <Button>Load More</Button>
-            </div>
+            {hasMore && (
+                <div className="d-flex justify-content-center w-100 mt-3">
+                    <Button onClick={() => setSkip((s) => s + 1)}>
+                        Load More
+                    </Button>
+                </div>
+            )}
         </>
     );
 }

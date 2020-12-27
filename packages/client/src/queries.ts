@@ -215,7 +215,12 @@ export const COMMENT_ON_POST = gql`
 `;
 
 export const POST_COMMENTS = gql`
-    query postComments($post: ID, $skip: Int, $limit: Int) {
+    query postComments(
+        $post: ID
+        $skip: Int
+        $limit: Int
+        $hasNextCommentsSkip: Int
+    ) {
         postComments: Comments(
             where: { post: { id: $post } }
             options: { skip: $skip, limit: $limit, sort: createdAt_ASC }
@@ -228,6 +233,16 @@ export const POST_COMMENTS = gql`
             content
             createdAt
             canDelete
+        }
+        hasNextComments: Comments(
+            where: { post: { id: $post } }
+            options: {
+                skip: $hasNextCommentsSkip
+                limit: 1
+                sort: createdAt_ASC
+            }
+        ) {
+            id
         }
     }
 `;
