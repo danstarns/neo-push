@@ -139,25 +139,37 @@ function MyBlogs() {
     const { getId } = useContext(auth.Context);
     const { query } = useContext(graphql.Context);
     const [skip, setSkip] = useState(0);
-    const [limit, setLimit] = useState(10);
+    const [limit] = useState(10);
     const [myBlogsHasMore, setMyBlogsHasMore] = useState(false);
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const getBlogs = useCallback(async () => {
+        setLoading(true);
+
+        try {
+            const response = await query({
+                query: MY_BLOGS,
+                variables: {
+                    id: getId(),
+                    skip: blogs.length,
+                    limit,
+                    hasNextBlogsSkip:
+                        blogs.length === 0 ? limit : blogs.length + 1,
+                },
+            });
+
+            console.log(response.hasNextBlogs);
+            setMyBlogsHasMore(Boolean(response.hasNextBlogs.length));
+            setBlogs((b) => [...b, ...response.myBlogs]);
+        } catch (e) {}
+
+        setLoading(false);
+    }, [skip, blogs, limit]);
+
     useEffect(() => {
-        (async () => {
-            try {
-                const response = await query({
-                    query: MY_BLOGS,
-                    variables: { id: getId(), skip, limit },
-                });
-
-                setBlogs(response.myBlogs);
-            } catch (e) {}
-
-            setLoading(false);
-        })();
-    }, []);
+        getBlogs();
+    }, [skip]);
 
     if (loading) {
         <Card className="mt-3 p-3">
@@ -176,35 +188,49 @@ function MyBlogs() {
                     <BlogItem key={blog.id} blog={blog}></BlogItem>
                 ))}
             </Row>
-            <div className="d-flex justify-content-center w-100">
-                <Button>Load More</Button>
-            </div>
+            {myBlogsHasMore && (
+                <div
+                    className="d-flex justify-content-center w-100"
+                    onClick={() => setSkip((s) => s + 1)}
+                >
+                    <Button>Load More</Button>
+                </div>
+            )}
         </Card>
     );
 }
 
 function RecentlyUpdatedBlogs() {
     const { query } = useContext(graphql.Context);
+    const [limit] = useState(10);
     const [skip, setSkip] = useState(0);
-    const [limit, setLimit] = useState(10);
     const [myBlogsHasMore, setMyBlogsHasMore] = useState(false);
     const [blogs, setBlogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const getBlogs = useCallback(async () => {
+        setLoading(true);
+        try {
+            const response = await query({
+                query: RECENTLY_UPDATED_BLOGS,
+                variables: {
+                    skip: blogs.length,
+                    limit,
+                    hasNextBlogsSkip:
+                        blogs.length === 0 ? limit : blogs.length + 1,
+                },
+            });
+
+            setMyBlogsHasMore(Boolean(response.hasNextBlogs.length));
+            setBlogs((b) => [...b, ...response.recentlyUpdatedBlogs]);
+        } catch (e) {}
+
+        setLoading(false);
+    }, [skip, blogs]);
+
     useEffect(() => {
-        (async () => {
-            try {
-                const response = await query({
-                    query: RECENTLY_UPDATED_BLOGS,
-                    variables: { skip, limit },
-                });
-
-                setBlogs(response.recentlyUpdatedBlogs);
-            } catch (e) {}
-
-            setLoading(false);
-        })();
-    }, []);
+        getBlogs();
+    }, [skip]);
 
     if (loading) {
         <Card className="mt-3 p-3">
@@ -227,9 +253,14 @@ function RecentlyUpdatedBlogs() {
                     ></BlogItem>
                 ))}
             </Row>
-            <div className="d-flex justify-content-center w-100">
-                <Button>Load More</Button>
-            </div>
+            {myBlogsHasMore && (
+                <div
+                    className="d-flex justify-content-center w-100"
+                    onClick={() => setSkip((s) => s + 1)}
+                >
+                    <Button>Load More</Button>
+                </div>
+            )}
         </Card>
     );
 }

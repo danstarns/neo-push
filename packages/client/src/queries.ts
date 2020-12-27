@@ -35,7 +35,7 @@ export const CREATE_BLOG = gql`
 `;
 
 export const MY_BLOGS = gql`
-    query myBlogs($id: ID, $skip: Int, $limit: Int) {
+    query myBlogs($id: ID, $skip: Int, $limit: Int, $hasNextBlogsSkip: Int) {
         myBlogs: Blogs(
             where: { OR: [{ creator: { id: $id } }, { authors: { id: $id } }] }
             options: { limit: $limit, skip: $skip, sort: createdAt_DESC }
@@ -48,11 +48,26 @@ export const MY_BLOGS = gql`
             }
             createdAt
         }
+        hasNextBlogs: Blogs(
+            where: { OR: [{ creator: { id: $id } }, { authors: { id: $id } }] }
+            options: {
+                limit: $limit
+                skip: $hasNextBlogsSkip
+                sort: createdAt_DESC
+            }
+        ) {
+            id
+            createdAt
+        }
     }
 `;
 
 export const RECENTLY_UPDATED_BLOGS = gql`
-    query recentlyUpdatedBlogs($skip: Int, $limit: Int) {
+    query recentlyUpdatedBlogs(
+        $skip: Int
+        $limit: Int
+        $hasNextBlogsSkip: Int
+    ) {
         recentlyUpdatedBlogs: Blogs(
             options: { limit: $limit, skip: $skip, sort: updatedAt_DESC }
         ) {
@@ -62,7 +77,16 @@ export const RECENTLY_UPDATED_BLOGS = gql`
                 id
                 email
             }
-            createdAt
+            updatedAt
+        }
+        hasNextBlogs: Blogs(
+            options: {
+                limit: $limit
+                skip: $hasNextBlogsSkip
+                sort: updatedAt_DESC
+            }
+        ) {
+            id
             updatedAt
         }
     }
