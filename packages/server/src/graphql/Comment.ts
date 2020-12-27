@@ -27,7 +27,7 @@ export const typeDefs = gql`
     extend type Comment
         @auth(
             rules: [
-                { operations: ["read"], allow: "*" }
+                { operations: ["read"], isAuthenticated: false }
                 { operations: ["create"], bind: { author: { id: "sub" } } }
                 {
                     operations: ["update", "connect"]

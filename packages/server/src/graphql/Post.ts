@@ -42,7 +42,7 @@ export const typeDefs = gql`
         @auth(
             rules: [
                 { operations: ["create"], bind: { author: { id: "sub" } } }
-                { operations: ["read"], allow: "*" }
+                { operations: ["read"], isAuthenticated: false }
                 {
                     operations: ["update"]
                     allow: {
@@ -59,8 +59,9 @@ export const typeDefs = gql`
                         ]
                     }
                 }
+                { operations: ["connect"], isAuthenticated: true }
                 {
-                    operations: ["delete"]
+                    operations: ["delete", "disconnect"]
                     allow: {
                         OR: [
                             { author: { id: "sub" } }

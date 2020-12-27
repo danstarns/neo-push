@@ -68,8 +68,7 @@ export const typeDefs = gql`
     extend type User
         @auth(
             rules: [
-                { operations: ["read"], allow: "*" }
-                { operations: ["create"], isAuthenticated: false }
+                { operations: ["read", "create"], isAuthenticated: false }
                 { operations: ["connect"], isAuthenticated: true }
                 {
                     operations: ["update"]
