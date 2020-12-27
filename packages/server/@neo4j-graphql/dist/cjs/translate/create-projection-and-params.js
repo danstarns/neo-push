@@ -167,14 +167,16 @@ function createProjectionAndParams(_a) {
                 unionStrs.push(")");
                 unionStrs.push("]");
                 if (optionsInput) {
+                    var hasSkip = Boolean(optionsInput.skip) || optionsInput.skip === 0;
+                    var hasLimit = Boolean(optionsInput.limit) || optionsInput.limit === 0;
                     var sortLimitStr = "";
-                    if (optionsInput.skip && !optionsInput.limit) {
+                    if (hasSkip && !hasLimit) {
                         sortLimitStr = "[" + optionsInput.skip + "..]";
                     }
-                    if (optionsInput.limit && !optionsInput.skip) {
+                    if (hasLimit && !hasSkip) {
                         sortLimitStr = "[.." + optionsInput.limit + "]";
                     }
-                    if (optionsInput.limit && optionsInput.skip) {
+                    if (hasLimit && hasSkip) {
                         sortLimitStr = "[" + optionsInput.skip + ".." + optionsInput.limit + "]";
                     }
                     unionStrs.push(sortLimitStr);

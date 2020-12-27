@@ -26,6 +26,10 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -85,11 +89,13 @@ function translateRead(_a) {
         authStr = allowAndParams[0];
     }
     if (optionsInput) {
-        if (optionsInput.skip) {
+        var hasSkip = Boolean(optionsInput.skip) || optionsInput.skip === 0;
+        var hasLimit = Boolean(optionsInput.limit) || optionsInput.limit === 0;
+        if (hasSkip) {
             skipStr = "SKIP $" + varName + "_skip";
             cypherParams[varName + "_skip"] = optionsInput.skip;
         }
-        if (optionsInput.limit) {
+        if (hasLimit) {
             limitStr = "LIMIT $" + varName + "_limit";
             cypherParams[varName + "_limit"] = optionsInput.limit;
         }
@@ -111,15 +117,15 @@ function translateRead(_a) {
             sortStr = "ORDER BY " + sortArr.join(", ");
         }
     }
-    var cypher = [
+    var cypher = __spread([
         matchStr,
         whereStr,
-        authStr,
+        authStr
+    ], (sortStr ? ["WITH " + varName, sortStr] : []), [
         "RETURN " + varName + " " + projStr + " as " + varName,
-        sortStr,
         skipStr,
         limitStr,
-    ];
+    ]);
     return [cypher.filter(Boolean).join("\n"), cypherParams];
 }
 function translateCreate(_a) {
