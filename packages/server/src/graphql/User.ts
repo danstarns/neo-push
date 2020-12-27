@@ -69,7 +69,7 @@ export const typeDefs = gql`
         @auth(
             rules: [
                 { operations: ["read"], allow: "*" }
-                { operations: ["create"], allow: "*" }
+                { operations: ["create"], isAuthenticated: false }
                 { operations: ["connect"], isAuthenticated: true }
                 {
                     operations: ["update"]

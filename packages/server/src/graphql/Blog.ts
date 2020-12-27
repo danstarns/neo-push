@@ -29,7 +29,7 @@ export const typeDefs = gql`
         @auth(
             rules: [
                 { operations: ["create"], bind: { creator: { id: "sub" } } }
-                { operations: ["read"], allow: "*" }
+                { operations: ["read"], isAuthenticated: false }
                 {
                     operations: ["update"]
                     allow: { creator: { id: "sub" } }
