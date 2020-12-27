@@ -192,7 +192,7 @@ export const BLOG_POSTS = gql`
 `;
 
 export const COMMENT_ON_POST = gql`
-    mutation createComment($post: ID, $content: String!, $user: ID) {
+    mutation commentOnPost($post: ID, $content: String!, $user: ID) {
         commentOnPost: createComments(
             input: [
                 {
