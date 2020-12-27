@@ -128,8 +128,7 @@ type User @timestamps {
 extend type User
     @auth(
         rules: [
-            { operations: ["read"], allow: "*" }
-            { operations: ["create"], isAuthenticated: false }
+            { operations: ["read", "create"], isAuthenticated: false }
             { operations: ["connect"], isAuthenticated: true }
             {
                 operations: ["update"]
@@ -169,21 +168,13 @@ extend type User
 
 In the typeDefs above you'll notice the `@auth` directive. Here we explain each rule in more detail.
 
-#### read
-
-```
-{ operations: ["read"], allow: "*" }
-```
-
-Here is stating that all users even unauthenticated can read a user, for example showing the author of a post.
-
-#### create
+#### create and read
 
 ```
 { operations: ["create"], isAuthenticated: false }
 ```
 
-Here is stating that all unauthenticated can create a user, for example signing up.
+Here is stating that all users even unauthenticated can read a user, for example showing the author of a post.
 
 #### connect
 
@@ -553,7 +544,7 @@ extend type Post
     @auth(
         rules: [
             { operations: ["create"], bind: { author: { id: "sub" } } }
-            { operations: ["read"], allow: "*" }
+            { operations: ["read"], isAuthenticated: false }
             {
                 operations: ["update"]
                 allow: {
@@ -570,8 +561,9 @@ extend type Post
                     ]
                 }
             }
+            { operations: ["connect"], isAuthenticated: true }
             {
-                operations: ["delete"]
+                operations: ["delete", "disconnect"]
                 allow: {
                     OR: [
                         { author: { id: "sub" } }
@@ -587,7 +579,68 @@ extend type Post
 
 Here some of the auth rules are explained.
 
-TODO
+#### create
+
+```
+{ operations: ["create"], bind: { author: { id: "sub" } } }
+```
+
+Here we are ensuring that the author of the post is the logged in user. Meaning users cannot assign posts to over users.
+
+#### read
+
+```
+{ operations: ["read"], isAuthenticated: false }
+```
+
+Anyone can read posts
+
+#### update
+
+```
+{
+    operations: ["update"]
+    allow: {
+        OR: [
+            { author: { id: "sub" } }
+            {
+                blog: {
+                    OR: [
+                        { creator: { id: "sub" } }
+                        { authors: { id: "sub" } }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+Here authors of the post, blog creators or authors can edit the post.
+
+#### connect
+
+```
+{ operations: ["connect"], isAuthenticated: true }
+```
+
+Here only authenticated users can connect to a post such as creating a comment.
+
+#### delete and disconnect
+
+```
+{
+    operations: ["delete", "disconnect"]
+    allow: {
+        OR: [
+            { author: { id: "sub" } }
+            { blog: { creator: { id: "sub" } } }
+        ]
+    }
+}
+```
+
+Here only post authors or blog creators and delete disconnect the post.
 
 ### Create Post
 
@@ -681,7 +734,7 @@ type Comment @timestamps {
 extend type Comment
     @auth(
         rules: [
-            { operations: ["read"], allow: "*" }
+            { operations: ["read"], isAuthenticated: false }
             { operations: ["create"], bind: { author: { id: "sub" } } }
             {
                 operations: ["update", "connect"]
@@ -712,7 +765,56 @@ extend type Comment
 
 Here some of the auth rules are explained.
 
-TODO
+#### read
+
+```
+{ operations: ["read"], isAuthenticated: false }
+```
+
+Anyone can read comments.
+
+#### create
+
+```
+{ operations: ["create"], bind: { author: { id: "sub" } } }
+```
+
+Here we are binding the logged in `user.id` to the `author.id` field on the comment. Meaning users can only assign comments to themselves.
+
+#### update and connect
+
+```
+{
+    operations: ["update", "connect"]
+    allow: { author: { id: "sub" } }
+    bind: { author: { id: "sub" } }
+}
+```
+
+Similar to the create above but also users can only edit there own comments & if they do they cannot change the author to someone else.
+
+#### delete and disconnect
+
+```
+{
+    operations: ["delete", "disconnect"]
+    allow: {
+        OR: [
+            { author: { id: "sub" } }
+            {
+                post: {
+                    OR: [
+                        { author: { id: "sub" } }
+                        { blog: { creator: { id: "sub" } } }
+                    ]
+                }
+            }
+        ]
+    }
+}
+```
+
+Here authors of the comment, authors of the post or creators of the blog can delete comments.
 
 ### Create Comment
 
@@ -760,7 +862,7 @@ mutation updateComment($id: ID, $content: String) {
 
 ### Delete Comment
 
-Users of the comment and authors plus creators of the post can delete a comment.
+Users of the comment, authors plus creators of the post can delete a comment.
 
 ![delete comment gif](assets/delete-comment.gif)
 
