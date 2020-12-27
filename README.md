@@ -441,6 +441,76 @@ mutation($name: String!, $sub: ID) {
 }
 ```
 
+### Edit Blog
+
+If your the creator of a blog you can edit its name.
+
+![edit blog gif](assets/edit-blog.gif)
+
+```graphql
+mutation editBlog($id: ID, $name: String) {
+    updateBlogs(where: { id: $id }, update: { name: $name }) {
+        id
+    }
+}
+```
+
+### Assign Author
+
+If you the creator of a blog you can assign other users as an author. You can also revoke too!
+
+![assign blog author gif](assets/assign-blog-author.gif)
+
+```graphql
+mutation assignBlogAuthor($blog: ID, $authorEmail: String) {
+    updateBlogs(
+        where: { id: $blog }
+        connect: { authors: { where: { email: $authorEmail } } }
+    ) {
+        authors {
+            email
+        }
+    }
+}
+```
+
+```graphql
+mutation revokeBlogAuthor($blog: ID, $authorEmail: String) {
+    updateBlogs(
+        where: { id: $blog }
+        disconnect: { authors: { where: { email: $authorEmail } } }
+    ) {
+        authors {
+            email
+        }
+    }
+}
+```
+
+### Delete Blog
+
+If you are the creator of a blog you can delete it.
+
+![delete blog gif](assets/delete-blog.gif)
+
+```graphql
+mutation deleteBlog($id: ID) {
+    deleteComments(where: { post: { blog: { id: $id } } }) {
+        nodesDeleted
+    }
+    deletePosts(where: { blog: { id: $id } }) {
+        nodesDeleted
+    }
+    deleteBlogs(where: { id: $id }) {
+        nodesDeleted
+    }
+}
+```
+
 ## Posts
 
 ## Comments
+
+```
+
+```
