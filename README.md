@@ -166,15 +166,15 @@ extend type User
 
 ### Authorization
 
-In the typeDefs above you'll notice the `@auth` directive. Here we explain each rule in more detail.
+Here some of the auth rules are explained.
 
-#### create and read
+#### read and create
 
 ```
-{ operations: ["create"], isAuthenticated: false }
+{ operations: ["read", "create"], isAuthenticated: false }
 ```
 
-Here is stating that all users even unauthenticated can read a user, for example showing the author of a post.
+Here is stating that all users even unauthenticated can read a user, for example showing the author of a post. Plus unauthenticated users can create a user such as singing up.
 
 #### connect
 
@@ -182,7 +182,7 @@ Here is stating that all users even unauthenticated can read a user, for example
 { operations: ["connect"], isAuthenticated: true }
 ```
 
-Here is stating that all users can create connections to a user, for example a user assigning another as an author of a blog.
+Here is stating that all authenticated users can create connections to a user, for example a user assigning another as an author of a blog.
 
 #### update
 
