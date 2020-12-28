@@ -6,6 +6,7 @@ import * as Blog from "./Blog";
 import * as Post from "./Post";
 import * as Comment from "./Comment";
 import { DocumentNode } from "graphql";
+import * as config from "../../config";
 
 const typeDefs = [
     User.typeDefs,
@@ -36,7 +37,7 @@ export const OGM = makeAugmentedSchema({
         ...User.resolvers,
     },
     context: { driver },
-    debug: true,
+    debug: config.NODE_ENV === "development",
 });
 
 // with auth and extensions for server
@@ -46,7 +47,7 @@ export const neoSchema = makeAugmentedSchema({
         ...User.resolvers,
     },
     context: { driver, OGM },
-    debug: true,
+    debug: config.NODE_ENV === "development",
 });
 
 export const server: ApolloServer = new ApolloServer({
