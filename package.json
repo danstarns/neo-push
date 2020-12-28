@@ -8,7 +8,8 @@
     "prepare": "run-s lerna:clean lerna:bootstrap",
     "lerna:clean": "lerna clean -y",
     "client:dev": "cd ./packages/client && npm run dev",
-    "server:dev": "cd ./packages/server && npm run dev"
+    "server:dev": "cd ./packages/server && npm run dev",
+    "seed": "cd ./packages/server && npm run seed"
   },
   "repository": {
     "type": "git",

@@ -81,6 +81,14 @@ Run the client on;
 $ npm run client:dev
 ```
 
+Run Seeder on;
+
+```
+$ npm run seed
+```
+
+> Checkout the seeder its using the OGM
+
 Run the server on;
 
 ```
@@ -862,7 +870,7 @@ mutation updateComment($id: ID, $content: String) {
 
 ### Delete Comment
 
-Users of the comment, authors plus creators of the post can delete a comment.
+Authors of the comment, authors of the post plus creators of the blog can delete a comment.
 
 ![delete comment gif](assets/delete-comment.gif)
 

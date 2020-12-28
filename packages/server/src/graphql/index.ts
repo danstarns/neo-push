@@ -5,9 +5,33 @@ import * as User from "./User";
 import * as Blog from "./Blog";
 import * as Post from "./Post";
 import * as Comment from "./Comment";
+import { DocumentNode } from "graphql";
 
-export const neoSchema = makeAugmentedSchema({
-    typeDefs: [User.typeDefs, Blog.typeDefs, Post.typeDefs, Comment.typeDefs],
+const typeDefs = [
+    User.typeDefs,
+    Blog.typeDefs,
+    Post.typeDefs,
+    Comment.typeDefs,
+];
+
+// without auth and extensions for seeder and custom logic
+export const OGM = makeAugmentedSchema({
+    typeDefs: typeDefs.reduce(
+        (res: DocumentNode, type) => {
+            const filtered = type.definitions.filter(
+                (x) => !x.kind.includes("Extension")
+            );
+
+            return {
+                ...res,
+                definitions: [...res.definitions, ...filtered],
+            };
+        },
+        {
+            kind: "Document",
+            definitions: [],
+        }
+    ),
     resolvers: {
         ...User.resolvers,
     },
@@ -15,7 +39,17 @@ export const neoSchema = makeAugmentedSchema({
     debug: true,
 });
 
+// with auth and extensions for server
+export const neoSchema = makeAugmentedSchema({
+    typeDefs,
+    resolvers: {
+        ...User.resolvers,
+    },
+    context: { driver, OGM },
+    debug: true,
+});
+
 export const server: ApolloServer = new ApolloServer({
     schema: neoSchema.schema,
-    context: ({ req }) => ({ neoSchema, driver, req }),
+    context: ({ req }) => ({ OGM, driver, req }),
 });

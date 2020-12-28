@@ -1,6 +1,6 @@
 import { ApolloServer } from "apollo-server-express";
 import { createTestClient } from "apollo-server-testing";
-import { neoSchema } from "../../src/graphql";
+import { OGM, neoSchema } from "../../src/graphql";
 import * as neo4j from "./neo4j";
 
 async function server(context = {}) {
@@ -8,7 +8,7 @@ async function server(context = {}) {
 
     const server = new ApolloServer({
         schema: neoSchema.schema,
-        context: () => ({ ...context, driver, neoSchema }),
+        context: () => ({ ...context, driver, OGM }),
     });
 
     const client = createTestClient(server);

@@ -1,5 +1,4 @@
 import { Context } from "../types";
-import { v4 as uuid } from "uuid";
 import { comparePassword, createJWT, hashPassword } from "../utils";
 import gql from "graphql-tag";
 
@@ -8,7 +7,7 @@ async function signUp(
     args: { email: string; password: string },
     context: Context
 ) {
-    const User = context.neoSchema.model("User");
+    const User = context.OGM.model("User");
 
     const [existing] = await User.find({ where: { email: args.email } });
 
@@ -21,7 +20,6 @@ async function signUp(
     const [user] = await User.create({
         input: [
             {
-                id: uuid(),
                 email: args.email,
                 password: hash,
             },
@@ -38,7 +36,7 @@ async function signIn(
     args: { email: string; password: string },
     context: Context
 ) {
-    const User = context.neoSchema.model("User");
+    const User = context.OGM.model("User");
 
     const [user] = await User.find({ where: { email: args.email } });
 
