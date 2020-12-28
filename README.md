@@ -1,15 +1,16 @@
 # neo-push
 
+⚠ Using **embedded** alpha branch here https://github.com/danstarns/graphql/tree/alpha
+
 Example blog site built with `@neo4j/graphql` & React.js. This application showcases features of `@neo4j/graphql` such as;
 
 1. Nested Mutations
 2. @auth directive
 3. OGM(Object Graph Mapper)
 
-There are only two custom resolvers in the server; sign up plus sign in. The lack of custom logic is showcasing how quickly developers can build, both powerful and secure, applications ontop of Neo4j.
+There are only two custom resolvers in the server; sign up plus sign in. The lack of custom logic is showcasing how quickly developers can build, both powerful and secure, applications ontop of Neo4j. Its worth nothing this entire application contains zero 'raw' cypher. All interaction's with the database are done through the generated GraphQL Schema via either the OGM or Apollo Server.
 
-> Its worth nothing this entire application contains zero 'raw' cypher. All interaction's with the database are done through the generated GraphQL Schema via either the OGM or Apollo Server.
-
+![overview](assets/overview.gif)
 ![arrows of data](assets/arrows.png)
 **Diagram from https://arrows.app/**
 
