@@ -89,6 +89,11 @@ $ npm run seed
 
 > Checkout the seeder its using the OGM
 
+**Once seeded used the default credentials to log in**
+
+1. Email: admin@admin.com
+2. Password: password
+
 Run the server on;
 
 ```
