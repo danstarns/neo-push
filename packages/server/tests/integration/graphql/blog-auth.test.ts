@@ -68,7 +68,7 @@ describe("blog-auth", () => {
         }
     });
 
-    test("should throw if blog.creator is not bound to jwt sub (on update)", async () => {
+    test("should throw if blog.creator is not bound to jwt sub (on update) (readonly)", async () => {
         const session = driver.session();
 
         const userId = generate({
@@ -114,110 +114,9 @@ describe("blog-auth", () => {
 
             throw new Error("invalid");
         } catch (error) {
-            expect(error.message).toEqual("Forbidden");
-        } finally {
-            await session.close();
-        }
-    });
-
-    test("should throw when trying to edit a blog when user is not creator", async () => {
-        const session = driver.session();
-
-        const userId = generate({
-            charset: "alphabetic",
-        });
-
-        const blogId = generate({
-            charset: "alphabetic",
-        });
-
-        const mutation = gql`
-            mutation {
-                updateBlogs(where: { id: "${blogId}"}, update: { id: "invalid" } ) {
-                    id
-                }
-            }
-
-        `;
-
-        const token = jsonwebtoken.sign(
-            { sub: userId },
-            process.env.JWT_SECRET as string
-        );
-
-        const socket = new Socket({ readable: true });
-        const req = new IncomingMessage(socket);
-        req.headers.authorization = `Bearer ${token}`;
-
-        try {
-            await session.run(`
-                CREATE (:Blog {id: "${blogId}"})
-            `);
-
-            const apolloServer = await server({ req });
-
-            const response = await apolloServer.mutate({
-                mutation,
-            });
-
-            if (response.errors) {
-                throw new Error(response.errors[0].message);
-            }
-
-            throw new Error("invalid");
-        } catch (error) {
-            expect(error.message).toEqual("Forbidden");
-        } finally {
-            await session.close();
-        }
-    });
-
-    test("should throw if blog.creator is not bound to jwt sub (on connect)", async () => {
-        const session = driver.session();
-
-        const userId = generate({
-            charset: "alphabetic",
-        });
-
-        const blogId = generate({
-            charset: "alphabetic",
-        });
-
-        const mutation = gql`
-            mutation {
-                updateBlogs(where: { id: "${blogId}"}, connect: { creator: { where: { id: "invalid" } } } ) {
-                    id
-                }
-            }
-        `;
-
-        const token = jsonwebtoken.sign(
-            { sub: userId },
-            process.env.JWT_SECRET as string
-        );
-
-        const socket = new Socket({ readable: true });
-        const req = new IncomingMessage(socket);
-        req.headers.authorization = `Bearer ${token}`;
-
-        try {
-            await session.run(`
-                CREATE (:Blog {id: "${blogId}"})
-            `);
-
-            const apolloServer = await server({ req });
-
-            const response = await apolloServer.mutate({
-                mutation,
-            });
-
-            if (response.errors) {
-                throw new Error(response.errors[0].message);
-            }
-
-            throw new Error("invalid");
-        } catch (error) {
-            expect(error.message).toEqual("Forbidden");
+            expect(error.message).toEqual(
+                'Field "creator" is not defined by type "BlogUpdateInput".'
+            );
         } finally {
             await session.close();
         }
@@ -255,57 +154,6 @@ describe("blog-auth", () => {
         try {
             await session.run(`
                 CREATE (:Blog {id: "${blogId}"})
-            `);
-
-            const apolloServer = await server({ req });
-
-            const response = await apolloServer.mutate({
-                mutation,
-            });
-
-            if (response.errors) {
-                throw new Error(response.errors[0].message);
-            }
-
-            throw new Error("invalid");
-        } catch (error) {
-            expect(error.message).toEqual("Forbidden");
-        } finally {
-            await session.close();
-        }
-    });
-
-    test("should throw if non creator is disconnecting a blog", async () => {
-        const session = driver.session();
-
-        const userId = generate({
-            charset: "alphabetic",
-        });
-
-        const blogId = generate({
-            charset: "alphabetic",
-        });
-
-        const mutation = gql`
-            mutation {
-                updateBlogs(where: { id: "${blogId}"}, disconnect: { creator: { where: { id: "${userId}" } } } ) {
-                    id
-                }
-            }
-        `;
-
-        const token = jsonwebtoken.sign(
-            { sub: "invalid" },
-            process.env.JWT_SECRET as string
-        );
-
-        const socket = new Socket({ readable: true });
-        const req = new IncomingMessage(socket);
-        req.headers.authorization = `Bearer ${token}`;
-
-        try {
-            await session.run(`
-                CREATE (:Blog {id: "${blogId}"})<-[:HAS_BLOG]-(:User {id: "${userId}"})
             `);
 
             const apolloServer = await server({ req });

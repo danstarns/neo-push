@@ -68,7 +68,7 @@ describe("post-auth", () => {
         }
     });
 
-    test("should throw error when user trying to edit a post when they are not the author or part of the blog", async () => {
+    test("should throw error when user trying to edit a post when they are not the author or part of the blog (readonly)", async () => {
         const session = driver.session();
 
         const userId = generate({
@@ -113,7 +113,9 @@ describe("post-auth", () => {
 
             throw new Error("invalid");
         } catch (error) {
-            expect(error.message).toEqual("Forbidden");
+            expect(error.message).toEqual(
+                'Field "id" is not defined by type "PostUpdateInput".'
+            );
         } finally {
             await session.close();
         }

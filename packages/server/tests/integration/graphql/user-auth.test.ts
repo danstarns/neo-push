@@ -20,7 +20,7 @@ describe("user-auth", () => {
         await driver.close();
     });
 
-    test("should throw error if user is trying to edit another user(allow)", async () => {
+    test("should throw error if user is trying to edit another user readonly", async () => {
         const session = driver.session();
 
         const userId = generate({
@@ -66,13 +66,15 @@ describe("user-auth", () => {
 
             throw new Error("invalid");
         } catch (error) {
-            expect(error.message).toEqual("Forbidden");
+            expect(error.message).toEqual(
+                'Field "id" is not defined by type "UserUpdateInput".'
+            );
         } finally {
             await session.close();
         }
     });
 
-    test("should throw error if user is changing its id(bind)", async () => {
+    test("should throw error if user is changing its id readonly", async () => {
         const session = driver.session();
 
         const userId = generate({
@@ -117,7 +119,9 @@ describe("user-auth", () => {
 
             throw new Error("invalid");
         } catch (error) {
-            expect(error.message).toEqual("Forbidden");
+            expect(error.message).toEqual(
+                'Field "id" is not defined by type "UserUpdateInput".'
+            );
         } finally {
             await session.close();
         }
