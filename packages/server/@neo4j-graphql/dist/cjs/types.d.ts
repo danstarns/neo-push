@@ -17,6 +17,7 @@ export interface BaseField {
     typeMeta: TypeMeta;
     otherDirectives: DirectiveNode[];
     arguments: InputValueDefinitionNode[];
+    readonly?: boolean;
 }
 /**
  * Representation of the `@relationship` directive and its meta.

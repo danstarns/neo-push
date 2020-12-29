@@ -100,7 +100,7 @@ function update(_a) {
     return {
         type: "[" + node.name + "]!",
         resolve: resolve,
-        args: __assign({ where: node.name + "Where", update: node.name + "UpdateInput" }, (node.relationFields.length
+        args: __assign({ where: node.name + "Where", update: node.name + "UpdateInput" }, (node.relationFields.filter(function (x) { return !x.readonly; }).length
             ? {
                 connect: node.name + "ConnectInput",
                 disconnect: node.name + "DisconnectInput",
