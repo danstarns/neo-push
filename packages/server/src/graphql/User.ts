@@ -60,6 +60,15 @@ export const resolvers = {
         signUp,
         signIn,
     },
+    User: {
+        password: (root, _args, context: Context) => {
+            if (!context.adminOverride) {
+                return "";
+            }
+
+            return root.password;
+        },
+    },
 };
 
 async function signUp(
@@ -69,7 +78,10 @@ async function signUp(
 ) {
     const User = context.OGM.model("User");
 
-    const [existing] = await User.find({ where: { email: args.email } });
+    const [existing] = await User.find({
+        where: { email: args.email },
+        context: { ...context, adminOverride: true },
+    });
 
     if (existing) {
         throw new Error("user with that email already exists");
@@ -98,7 +110,10 @@ async function signIn(
 ) {
     const User = context.OGM.model("User");
 
-    const [user] = await User.find({ where: { email: args.email } });
+    const [user] = await User.find({
+        where: { email: args.email },
+        context: { ...context, adminOverride: true },
+    });
 
     if (!user) {
         throw new Error("user not found");
