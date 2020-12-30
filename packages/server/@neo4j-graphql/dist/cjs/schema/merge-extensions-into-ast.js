@@ -141,12 +141,28 @@ function getKindInfo(def) {
         }
     }
 }
+function mergeFieldDirectives(fields, extFields) {
+    if (fields === void 0) { fields = []; }
+    if (extFields === void 0) { extFields = []; }
+    var result = __spread(fields);
+    extFields.forEach(function (extField) {
+        var existingIndex = result.findIndex(function (x) { return x.name.value === extField.name.value; });
+        if (existingIndex !== -1) {
+            var existing = result[existingIndex];
+            result[existingIndex] = __assign(__assign(__assign({}, existing), extField), { directives: __spread((existing.directives ? existing.directives : []), (extField.directives ? extField.directives : [])) });
+        }
+        else {
+            result.push(extField);
+        }
+    });
+    return result;
+}
 function extendDefinition(def, ext) {
     var extendLocation = function (loc, loc2) { return (__assign(__assign({}, loc), { ext: loc.ext ? __spread(loc.ext, [loc2]) : [loc2] })); };
     // @ts-ignore
     var directives = __spread((def.directives || []), (ext.directives || []));
     // @ts-ignore
-    var fields = __spread((def.fields || []), (ext.fields || []));
+    var fields = mergeFieldDirectives(def.fields, ext.fields);
     var loc = extendLocation(def.loc, ext.loc);
     switch (def.kind) {
         case graphql_1.Kind.SCHEMA_DEFINITION: {
