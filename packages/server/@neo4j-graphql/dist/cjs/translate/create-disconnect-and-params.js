@@ -36,13 +36,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
+var constants_1 = require("../constants");
 function createDisconnectAndParams(_a) {
-    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride, parentNode = _a.parentNode;
+    var withVars = _a.withVars, value = _a.value, varName = _a.varName, relationField = _a.relationField, parentVar = _a.parentVar, refNode = _a.refNode, context = _a.context, labelOverride = _a.labelOverride, parentNode = _a.parentNode, insideDoWhen = _a.insideDoWhen;
     function reducer(res, disconnect, index) {
         var _varName = "" + varName + index;
         var inStr = relationField.direction === "IN" ? "<-" : "-";
         var outStr = relationField.direction === "OUT" ? "->" : "-";
-        var relTypeStr = "[" + _varName + "_rel:" + relationField.type + "]";
+        var relVarName = _varName + "_rel";
+        var relTypeStr = "[" + relVarName + ":" + relationField.type + "]";
         res.disconnects.push("WITH " + withVars.join(", "));
         res.disconnects.push("OPTIONAL MATCH (" + parentVar + ")" + inStr + relTypeStr + outStr + "(" + _varName + ":" + (labelOverride || relationField.typeMeta.name) + ")");
         if (disconnect.where) {
@@ -55,17 +57,29 @@ function createDisconnectAndParams(_a) {
             res.disconnects.push(where[0]);
             res.params = __assign(__assign({}, res.params), where[1]);
         }
-        if (refNode.auth) {
-            var allowAndParams = create_auth_and_params_1.default({
-                context: context,
-                node: refNode,
+        var preAuth = [parentNode, refNode].reduce(function (result, node, i) {
+            if (!node.auth) {
+                return result;
+            }
+            var _a = __read(create_auth_and_params_1.default({
+                entity: node,
                 operation: "disconnect",
-                varName: _varName,
-                chainStrOverRide: _varName + "_allow",
-                type: "allow",
-            });
-            res.disconnects.push(allowAndParams[0]);
-            res.params = __assign(__assign({}, res.params), allowAndParams[1]);
+                context: context,
+                escapeQuotes: Boolean(insideDoWhen),
+                allow: { parentNode: node, varName: _varName, chainStr: "" + _varName + node.name + i + "_allow" },
+            }), 2), str = _a[0], params = _a[1];
+            if (!str) {
+                return result;
+            }
+            result.disconnects.push(str);
+            result.params = __assign(__assign({}, result.params), params);
+            return result;
+        }, { disconnects: [], params: {} });
+        if (preAuth.disconnects.length) {
+            var quote = insideDoWhen ? "\\\"" : "\"";
+            res.disconnects.push("WITH " + __spread(withVars, [_varName, relVarName]).join(", "));
+            res.disconnects.push("CALL apoc.util.validate(NOT(" + preAuth.disconnects.join(" AND ") + "), " + quote + constants_1.AUTH_FORBIDDEN_ERROR + quote + ", [0])");
+            res.params = __assign(__assign({}, res.params), preAuth.params);
         }
         /*
            Replace with subclauses https://neo4j.com/developer/kb/conditional-cypher-execution/
@@ -108,25 +122,37 @@ function createDisconnectAndParams(_a) {
                 res.params = __assign(__assign({}, res.params), reduced.params);
             });
         }
+        var postAuth = [parentNode, refNode].reduce(function (result, node, i) {
+            if (!node.auth) {
+                return result;
+            }
+            var _a = __read(create_auth_and_params_1.default({
+                entity: node,
+                operation: "disconnect",
+                context: context,
+                escapeQuotes: Boolean(insideDoWhen),
+                skipRoles: true,
+                skipIsAuthenticated: true,
+                bind: { parentNode: node, varName: _varName, chainStr: "" + _varName + node.name + i + "_bind" },
+            }), 2), str = _a[0], params = _a[1];
+            if (!str) {
+                return result;
+            }
+            result.disconnects.push(str);
+            result.params = __assign(__assign({}, result.params), params);
+            return result;
+        }, { disconnects: [], params: {} });
+        if (postAuth.disconnects.length) {
+            var quote = insideDoWhen ? "\\\"" : "\"";
+            res.disconnects.push("WITH " + __spread(withVars, [_varName]).join(", "));
+            res.disconnects.push("CALL apoc.util.validate(NOT(" + postAuth.disconnects.join(" AND ") + "), " + quote + constants_1.AUTH_FORBIDDEN_ERROR + quote + ", [0])");
+            res.params = __assign(__assign({}, res.params), postAuth.params);
+        }
         return res;
     }
-    var initialStrs = [];
-    var initialParams = {};
-    if (parentNode.auth) {
-        var allowAndParams = create_auth_and_params_1.default({
-            context: context,
-            node: parentNode,
-            operation: "disconnect",
-            varName: parentVar,
-            chainStrOverRide: parentVar + "_allow",
-            type: "allow",
-        });
-        initialStrs.push(allowAndParams[0]);
-        initialParams = __assign(__assign({}, initialParams), allowAndParams[1]);
-    }
     var _b = (relationField.typeMeta.array ? value : [value]).reduce(reducer, {
-        disconnects: initialStrs,
-        params: initialParams,
+        disconnects: [],
+        params: {},
     }), disconnects = _b.disconnects, params = _b.params;
     return [disconnects.join("\n"), params];
 }

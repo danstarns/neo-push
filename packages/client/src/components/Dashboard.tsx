@@ -46,7 +46,7 @@ function CreateBlog({ close }: { close: () => void }) {
                 });
 
                 history.push(
-                    constants.BLOG_PAGE + "/" + response.createBlogs[0].id
+                    constants.BLOG_PAGE + "/" + response.createBlogs.blogs[0].id
                 );
             } catch (e) {
                 setError(e.message);
@@ -281,7 +281,7 @@ function Dashboard() {
                     variables: { id: getId() },
                 });
 
-                setUser(response.Users[0]);
+                setUser(response.users[0]);
             } catch (e) {
                 setError(e.message);
             }

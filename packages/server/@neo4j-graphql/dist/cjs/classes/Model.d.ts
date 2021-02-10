@@ -1,18 +1,20 @@
-import { DocumentNode, GraphQLSchema } from "graphql";
+import { DocumentNode } from "graphql";
 import { GraphQLOptionsArg, GraphQLWhereArg, DeleteInfo } from "../types";
+import NeoSchema from "./NeoSchema";
 export interface ModelConstructor {
     name: string;
     selectionSet: string;
-    getGraphQLSchema: () => GraphQLSchema;
+    neoSchema: NeoSchema;
 }
-declare class Model<T = any> {
+declare class Model {
     name: string;
     private namePluralized;
-    private getGraphQLSchema;
+    private camelCaseName;
+    private neoSchema;
     protected selectionSet: string;
     constructor(input: ModelConstructor);
     setSelectionSet(selectionSet: string | DocumentNode): void;
-    find({ where, options, selectionSet, args, context, rootValue, }?: {
+    find<T = any[]>({ where, options, selectionSet, args, context, rootValue, }?: {
         where?: GraphQLWhereArg;
         options?: GraphQLOptionsArg;
         selectionSet?: string | DocumentNode;
@@ -20,14 +22,14 @@ declare class Model<T = any> {
         context?: any;
         rootValue?: any;
     }): Promise<T>;
-    create({ input, selectionSet, args, context, rootValue, }?: {
+    create<T = any>({ input, selectionSet, args, context, rootValue, }?: {
         input?: any;
         selectionSet?: string | DocumentNode;
         args?: any;
         context?: any;
         rootValue?: any;
     }): Promise<T>;
-    update({ where, update, connect, disconnect, create, selectionSet, args, context, rootValue, }?: {
+    update<T = any>({ where, update, connect, disconnect, create, selectionSet, args, context, rootValue, }?: {
         where?: GraphQLWhereArg;
         update?: any;
         connect?: any;

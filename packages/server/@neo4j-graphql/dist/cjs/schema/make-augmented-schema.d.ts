@@ -1,9 +1,10 @@
 import { Driver } from "neo4j-driver";
 import { NeoSchema } from "../classes";
+import { TypeDefs, Resolvers, SchemaDirectives } from "../types";
 export interface MakeAugmentedSchemaOptions {
-    typeDefs: any;
-    resolvers?: any;
-    schemaDirectives?: any;
+    typeDefs: TypeDefs;
+    resolvers?: Resolvers;
+    schemaDirectives?: SchemaDirectives;
     debug?: boolean | ((...values: any[]) => void);
     context?: {
         [k: string]: any;

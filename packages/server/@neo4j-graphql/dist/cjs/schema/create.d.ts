@@ -5,7 +5,9 @@ declare function create({ node, getSchema }: {
     getSchema: () => NeoSchema;
 }): {
     type: string;
-    resolve: (_root: any, _args: any, context: any, resolveInfo: GraphQLResolveInfo) => Promise<unknown[]>;
+    resolve: (_root: any, _args: any, context: any, resolveInfo: GraphQLResolveInfo) => Promise<{
+        [x: number]: unknown[];
+    }>;
     args: {
         input: string;
     };

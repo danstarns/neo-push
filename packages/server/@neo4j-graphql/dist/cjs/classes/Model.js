@@ -52,25 +52,20 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var graphql_1 = require("graphql");
 var pluralize_1 = __importDefault(require("pluralize"));
+var camelcase_1 = __importDefault(require("camelcase"));
+var utils_1 = require("../utils");
 function printSelectionSet(selectionSet) {
     if (typeof selectionSet === "string") {
         return graphql_1.print(graphql_1.parse(selectionSet));
     }
     return graphql_1.print(selectionSet);
 }
-function removeNull(data) {
-    return JSON.parse(JSON.stringify(data), function (_key, value) {
-        if (value === null) {
-            return undefined;
-        }
-        return value;
-    });
-}
 var Model = /** @class */ (function () {
     function Model(input) {
         this.name = input.name;
         this.namePluralized = pluralize_1.default(input.name);
-        this.getGraphQLSchema = input.getGraphQLSchema;
+        this.camelCaseName = camelcase_1.default(this.namePluralized);
+        this.neoSchema = input.neoSchema;
         this.selectionSet = input.selectionSet;
     }
     Model.prototype.setSelectionSet = function (selectionSet) {
@@ -80,7 +75,7 @@ var Model = /** @class */ (function () {
         var _b;
         var _c = _a === void 0 ? {} : _a, where = _c.where, options = _c.options, selectionSet = _c.selectionSet, _d = _c.args, args = _d === void 0 ? {} : _d, _e = _c.context, context = _e === void 0 ? {} : _e, _f = _c.rootValue, rootValue = _f === void 0 ? null : _f;
         return __awaiter(this, void 0, void 0, function () {
-            var argDefinitions, argsApply, query, schema, variableValues, result;
+            var argDefinitions, argsApply, selection, query, variableValues, result;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
@@ -96,16 +91,16 @@ var Model = /** @class */ (function () {
                             "" + (options ? "options: $options" : ""),
                             "" + (where || options ? ")" : ""),
                         ];
-                        query = "\n            query " + argDefinitions.join(" ") + "{\n                " + this.namePluralized + argsApply.join(" ") + " " + printSelectionSet(selectionSet || this.selectionSet) + "\n            }\n        ";
-                        schema = this.getGraphQLSchema();
+                        selection = printSelectionSet(selectionSet || this.selectionSet);
+                        query = "\n            query " + argDefinitions.join(" ") + "{\n                " + this.camelCaseName + argsApply.join(" ") + " " + selection + "\n            }\n        ";
                         variableValues = __assign({ where: where, options: options }, args);
-                        return [4 /*yield*/, graphql_1.graphql(schema, query, rootValue, context, variableValues)];
+                        return [4 /*yield*/, graphql_1.graphql(this.neoSchema.schema, query, rootValue, context, variableValues)];
                     case 1:
                         result = _g.sent();
                         if ((_b = result.errors) === null || _b === void 0 ? void 0 : _b.length) {
                             throw new Error(result.errors[0].message);
                         }
-                        return [2 /*return*/, removeNull(result.data[this.namePluralized])];
+                        return [2 /*return*/, result.data[this.camelCaseName]];
                 }
             });
         });
@@ -114,24 +109,27 @@ var Model = /** @class */ (function () {
         var _b;
         var _c = _a === void 0 ? {} : _a, input = _c.input, selectionSet = _c.selectionSet, _d = _c.args, args = _d === void 0 ? {} : _d, _e = _c.context, context = _e === void 0 ? {} : _e, _f = _c.rootValue, rootValue = _f === void 0 ? null : _f;
         return __awaiter(this, void 0, void 0, function () {
-            var upperFirst, mutationName, mutation, schema, variableValues, result;
+            var mutationName, selection, mutation, variableValues, result;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
-                        upperFirst = this.namePluralized.split("");
-                        upperFirst[0] = upperFirst[0].toLocaleUpperCase();
-                        upperFirst = upperFirst.join("");
-                        mutationName = "create" + upperFirst;
-                        mutation = "\n            mutation ($input: [" + this.name + "CreateInput]!){\n               " + mutationName + "(input: $input) " + printSelectionSet(selectionSet || this.selectionSet) + "\n            }\n        ";
-                        schema = this.getGraphQLSchema();
+                        mutationName = "create" + utils_1.upperFirstLetter(this.namePluralized);
+                        selection = "";
+                        if (selectionSet) {
+                            selection = printSelectionSet(selectionSet);
+                        }
+                        else {
+                            selection = "\n               {\n                   " + this.camelCaseName + " \n                   " + printSelectionSet(selectionSet || this.selectionSet) + "\n               }\n           ";
+                        }
+                        mutation = "\n            mutation ($input: [" + this.name + "CreateInput]!){\n               " + mutationName + "(input: $input) " + selection + "\n            }\n        ";
                         variableValues = __assign(__assign({}, args), { input: input });
-                        return [4 /*yield*/, graphql_1.graphql(schema, mutation, rootValue, context, variableValues)];
+                        return [4 /*yield*/, graphql_1.graphql(this.neoSchema.schema, mutation, rootValue, context, variableValues)];
                     case 1:
                         result = _g.sent();
                         if ((_b = result.errors) === null || _b === void 0 ? void 0 : _b.length) {
                             throw new Error(result.errors[0].message);
                         }
-                        return [2 /*return*/, removeNull(result.data[mutationName])];
+                        return [2 /*return*/, result.data[mutationName]];
                 }
             });
         });
@@ -140,14 +138,18 @@ var Model = /** @class */ (function () {
         var _b;
         var _c = _a === void 0 ? {} : _a, where = _c.where, update = _c.update, connect = _c.connect, disconnect = _c.disconnect, create = _c.create, selectionSet = _c.selectionSet, _d = _c.args, args = _d === void 0 ? {} : _d, _e = _c.context, context = _e === void 0 ? {} : _e, _f = _c.rootValue, rootValue = _f === void 0 ? null : _f;
         return __awaiter(this, void 0, void 0, function () {
-            var upperFirst, mutationName, argWorthy, argDefinitions, argsApply, mutation, schema, variableValues, result;
+            var mutationName, selection, argWorthy, argDefinitions, argsApply, mutation, variableValues, result;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
-                        upperFirst = this.namePluralized.split("");
-                        upperFirst[0] = upperFirst[0].toLocaleUpperCase();
-                        upperFirst = upperFirst.join("");
-                        mutationName = "update" + upperFirst;
+                        mutationName = "update" + utils_1.upperFirstLetter(this.namePluralized);
+                        selection = "";
+                        if (selectionSet) {
+                            selection = printSelectionSet(selectionSet);
+                        }
+                        else {
+                            selection = "\n               {\n                   " + this.camelCaseName + " \n                   " + printSelectionSet(selectionSet || this.selectionSet) + "\n               }\n           ";
+                        }
                         argWorthy = where || update || connect || disconnect || create;
                         argDefinitions = [
                             "" + (argWorthy ? "(" : ""),
@@ -167,16 +169,15 @@ var Model = /** @class */ (function () {
                             "" + (create ? "create: $create" : ""),
                             "" + (argWorthy ? ")" : ""),
                         ];
-                        mutation = "\n            mutation " + argDefinitions.join(" ") + "{\n               " + mutationName + argsApply.join(" ") + " " + printSelectionSet(selectionSet || this.selectionSet) + "\n            }\n        ";
-                        schema = this.getGraphQLSchema();
+                        mutation = "\n            mutation " + argDefinitions.join(" ") + "{\n               " + mutationName + argsApply.join(" ") + "\n               " + selection + "\n            }\n        ";
                         variableValues = __assign(__assign({}, args), { where: where, update: update, connect: connect, disconnect: disconnect, create: create });
-                        return [4 /*yield*/, graphql_1.graphql(schema, mutation, rootValue, context, variableValues)];
+                        return [4 /*yield*/, graphql_1.graphql(this.neoSchema.schema, mutation, rootValue, context, variableValues)];
                     case 1:
                         result = _g.sent();
                         if ((_b = result.errors) === null || _b === void 0 ? void 0 : _b.length) {
                             throw new Error(result.errors[0].message);
                         }
-                        return [2 /*return*/, removeNull(result.data[mutationName])];
+                        return [2 /*return*/, result.data[mutationName]];
                 }
             });
         });
@@ -185,14 +186,11 @@ var Model = /** @class */ (function () {
         var _b;
         var _c = _a === void 0 ? {} : _a, where = _c.where, _d = _c.context, context = _d === void 0 ? {} : _d, _e = _c.rootValue, rootValue = _e === void 0 ? null : _e;
         return __awaiter(this, void 0, void 0, function () {
-            var upperFirst, mutationName, argDefinitions, argsApply, mutation, schema, variableValues, result;
+            var mutationName, argDefinitions, argsApply, mutation, variableValues, result;
             return __generator(this, function (_f) {
                 switch (_f.label) {
                     case 0:
-                        upperFirst = this.namePluralized.split("");
-                        upperFirst[0] = upperFirst[0].toLocaleUpperCase();
-                        upperFirst = upperFirst.join("");
-                        mutationName = "delete" + upperFirst;
+                        mutationName = "delete" + utils_1.upperFirstLetter(this.namePluralized);
                         argDefinitions = [
                             "" + (where ? "(" : ""),
                             "" + (where ? "$where: " + this.name + "Where" : ""),
@@ -200,9 +198,8 @@ var Model = /** @class */ (function () {
                         ];
                         argsApply = ["" + (where ? "(" : ""), "" + (where ? "where: $where" : ""), "" + (where ? ")" : "")];
                         mutation = "\n            mutation " + argDefinitions.join(" ") + "{\n               " + mutationName + argsApply.join(" ") + " {\n                   nodesDeleted\n                   relationshipsDeleted\n               }\n            }\n        ";
-                        schema = this.getGraphQLSchema();
                         variableValues = { where: where };
-                        return [4 /*yield*/, graphql_1.graphql(schema, mutation, rootValue, context, variableValues)];
+                        return [4 /*yield*/, graphql_1.graphql(this.neoSchema.schema, mutation, rootValue, context, variableValues)];
                     case 1:
                         result = _f.sent();
                         if ((_b = result.errors) === null || _b === void 0 ? void 0 : _b.length) {

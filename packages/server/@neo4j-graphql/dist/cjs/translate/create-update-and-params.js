@@ -39,10 +39,11 @@ var create_disconnect_and_params_1 = __importDefault(require("./create-disconnec
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var create_create_and_params_1 = __importDefault(require("./create-create-and-params"));
 var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
-var auth_1 = require("../auth");
+var create_auth_param_1 = __importDefault(require("./create-auth-param"));
+var constants_1 = require("../constants");
 function createUpdateAndParams(_a) {
     var updateInput = _a.updateInput, varName = _a.varName, node = _a.node, parentVar = _a.parentVar, chainStr = _a.chainStr, insideDoWhen = _a.insideDoWhen, withVars = _a.withVars, context = _a.context;
-    var updatedAt = false;
+    var hasAppliedTimeStamps = false;
     function reducer(res, _a) {
         var _b;
         var _c = __read(_a, 2), key = _c[0], value = _c[1];
@@ -54,6 +55,7 @@ function createUpdateAndParams(_a) {
             param = parentVar + "_update_" + key;
         }
         var relationField = node.relationFields.find(function (x) { return key.startsWith(x.fieldName); });
+        var pointField = node.pointFields.find(function (x) { return key.startsWith(x.fieldName); });
         var unionTypeName = "";
         if (relationField) {
             var refNode_1;
@@ -86,19 +88,8 @@ function createUpdateAndParams(_a) {
                         res.params = __assign(__assign({}, res.params), whereAndParams[1]);
                     }
                     res.strs.push("CALL apoc.do.when(" + _varName + " IS NOT NULL, " + (insideDoWhen ? '\\"' : '"'));
-                    var innerApocParams = {};
-                    if (refNode_1.auth) {
-                        var allowAndParams = create_auth_and_params_1.default({
-                            operation: "update",
-                            node: refNode_1,
-                            context: context,
-                            varName: _varName,
-                            type: "allow",
-                        });
-                        res.strs.push(allowAndParams[0].replace(/"/g, '\\"'));
-                        res.params = __assign(__assign({}, res.params), allowAndParams[1]);
-                        innerApocParams = __assign(__assign({}, innerApocParams), allowAndParams[1]);
-                    }
+                    var auth = create_auth_param_1.default({ context: context });
+                    var innerApocParams = { auth: auth };
                     var updateAndParams = createUpdateAndParams({
                         context: context,
                         node: refNode_1,
@@ -109,21 +100,8 @@ function createUpdateAndParams(_a) {
                         chainStr: "" + param + index,
                         insideDoWhen: true,
                     });
-                    res.params = __assign(__assign({}, res.params), updateAndParams[1]);
+                    res.params = __assign(__assign(__assign({}, res.params), updateAndParams[1]), { auth: auth });
                     innerApocParams = __assign(__assign({}, innerApocParams), updateAndParams[1]);
-                    if (refNode_1.auth) {
-                        var bindAndParams = create_auth_and_params_1.default({
-                            operation: "update",
-                            node: refNode_1,
-                            context: context,
-                            varName: _varName,
-                            chainStrOverRide: _varName + "_bind",
-                            type: "bind",
-                        });
-                        res.strs.push(bindAndParams[0].replace(/"/g, '\\"'));
-                        res.params = __assign(__assign({}, res.params), bindAndParams[1]);
-                        innerApocParams = __assign(__assign({}, innerApocParams), bindAndParams[1]);
-                    }
                     var updateStrs = [updateAndParams[0], "RETURN count(*)"];
                     var apocArgs = "{" + parentVar + ":" + parentVar + ", " + _varName + ":" + _varName + "REPLACE_ME}";
                     if (insideDoWhen) {
@@ -148,6 +126,7 @@ function createUpdateAndParams(_a) {
                         relationField: relationField,
                         labelOverride: unionTypeName,
                         parentNode: node,
+                        insideDoWhen: insideDoWhen,
                     });
                     res.strs.push(disconnectAndParams[0]);
                     res.params = __assign(__assign({}, res.params), disconnectAndParams[1]);
@@ -163,6 +142,7 @@ function createUpdateAndParams(_a) {
                         relationField: relationField,
                         labelOverride: unionTypeName,
                         parentNode: node,
+                        insideDoWhen: insideDoWhen,
                     });
                     res.strs.push(connectAndParams[0]);
                     res.params = __assign(__assign({}, res.params), connectAndParams[1]);
@@ -180,6 +160,7 @@ function createUpdateAndParams(_a) {
                             input: create,
                             varName: innerVarName,
                             withVars: __spread(withVars, [innerVarName]),
+                            insideDoWhen: insideDoWhen,
                         });
                         res.strs.push(createAndParams[0]);
                         res.params = __assign(__assign({}, res.params), createAndParams[1]);
@@ -189,17 +170,107 @@ function createUpdateAndParams(_a) {
             });
             return res;
         }
-        auth_1.checkRoles({ node: node, context: context, operation: "update" });
-        if (node.timestamps && !updatedAt) {
-            res.strs.push("SET " + varName + ".updatedAt = datetime()");
-            updatedAt = true;
+        if (!hasAppliedTimeStamps) {
+            var timestamps = node.dateTimeFields.filter(function (x) { return x.timestamps && x.timestamps.includes("update"); });
+            timestamps.forEach(function (ts) {
+                res.strs.push("SET " + varName + "." + ts.fieldName + " = datetime()");
+            });
+            hasAppliedTimeStamps = true;
         }
-        res.strs.push("SET " + varName + "." + key + " = $" + param);
-        res.params[param] = value;
+        var settableField = node.settableFields.find(function (x) { return x.fieldName === key; });
+        var authableField = node.authableFields.find(function (x) { return x.fieldName === key; });
+        if (settableField) {
+            if (pointField) {
+                if (pointField.typeMeta.array) {
+                    res.strs.push("SET " + varName + "." + key + " = [p in $" + param + " | point(p)]");
+                }
+                else {
+                    res.strs.push("SET " + varName + "." + key + " = point($" + param + ")");
+                }
+            }
+            else {
+                res.strs.push("SET " + varName + "." + key + " = $" + param);
+            }
+            res.params[param] = value;
+        }
+        if (authableField) {
+            if (authableField.auth) {
+                var preAuth_1 = create_auth_and_params_1.default({
+                    entity: authableField,
+                    operation: "update",
+                    context: context,
+                    allow: { varName: varName, parentNode: node, chainStr: param },
+                });
+                var postAuth_1 = create_auth_and_params_1.default({
+                    entity: authableField,
+                    operation: "update",
+                    skipRoles: true,
+                    skipIsAuthenticated: true,
+                    context: context,
+                    bind: { parentNode: node, varName: varName, chainStr: param },
+                });
+                if (!res.meta) {
+                    res.meta = { preAuthStrs: [], postAuthStrs: [] };
+                }
+                if (preAuth_1[0]) {
+                    res.meta.preAuthStrs.push(preAuth_1[0]);
+                    res.params = __assign(__assign({}, res.params), preAuth_1[1]);
+                }
+                if (postAuth_1[0]) {
+                    res.meta.postAuthStrs.push(postAuth_1[0]);
+                    res.params = __assign(__assign({}, res.params), postAuth_1[1]);
+                }
+            }
+        }
         return res;
     }
-    var _b = Object.entries(updateInput).reduce(reducer, { strs: [], params: {} }), strs = _b.strs, params = _b.params;
-    return [strs.join("\n"), params];
+    // eslint-disable-next-line prefer-const
+    var _b = Object.entries(updateInput).reduce(reducer, {
+        strs: [],
+        params: {},
+    }), strs = _b.strs, params = _b.params, _c = _b.meta, meta = _c === void 0 ? { preAuthStrs: [], postAuthStrs: [] } : _c;
+    var preAuthStrs = [];
+    var postAuthStrs = [];
+    var withStr = "WITH " + withVars.join(", ");
+    var preAuth = create_auth_and_params_1.default({
+        entity: node,
+        context: context,
+        allow: { parentNode: node, varName: varName },
+        operation: "update",
+    });
+    if (preAuth[0]) {
+        preAuthStrs.push(preAuth[0]);
+        params = __assign(__assign({}, params), preAuth[1]);
+    }
+    var postAuth = create_auth_and_params_1.default({
+        entity: node,
+        context: context,
+        skipIsAuthenticated: true,
+        skipRoles: true,
+        operation: "update",
+        bind: { parentNode: node, varName: varName },
+    });
+    if (postAuth[0]) {
+        postAuthStrs.push(postAuth[0]);
+        params = __assign(__assign({}, params), postAuth[1]);
+    }
+    if (meta) {
+        preAuthStrs = __spread(preAuthStrs, meta.preAuthStrs);
+        postAuthStrs = __spread(postAuthStrs, meta.postAuthStrs);
+    }
+    var preAuthStr = "";
+    var postAuthStr = "";
+    var forbiddenString = "" + (insideDoWhen ? "\\\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\\\"" : "\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\"");
+    if (preAuthStrs.length) {
+        var apocStr = "CALL apoc.util.validate(NOT(" + preAuthStrs.join(" AND ") + "), " + forbiddenString + ", [0])";
+        preAuthStr = withStr + "\n" + apocStr;
+    }
+    if (postAuthStrs.length) {
+        var apocStr = "CALL apoc.util.validate(NOT(" + postAuthStrs.join(" AND ") + "), " + forbiddenString + ", [0])";
+        postAuthStr = withStr + "\n" + apocStr;
+    }
+    var str = preAuthStr + "\n" + strs.join("\n") + "\n" + postAuthStr;
+    return [str, params];
 }
 exports.default = createUpdateAndParams;
 //# sourceMappingURL=create-update-and-params.js.map

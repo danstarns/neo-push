@@ -19,11 +19,7 @@ var __spread = (this && this.__spread) || function () {
     for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
     return ar;
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var Model_1 = __importDefault(require("./Model"));
 var Node = /** @class */ (function () {
     function Node(input) {
         this.name = input.name;
@@ -38,10 +34,12 @@ var Node = /** @class */ (function () {
         this.interfaces = input.interfaces;
         this.objectFields = input.objectFields;
         this.dateTimeFields = input.dateTimeFields;
+        this.pointFields = input.pointFields;
+        this.exclude = input.exclude;
         this.auth = input.auth;
-        this.timestamps = input.timestamps;
-        var selectionSet = "\n            {\n                " + [this.primitiveFields, this.scalarFields, this.enumFields].reduce(function (res, v) { return __spread(res, v.map(function (x) { return x.fieldName; })); }, []) + "\n            }\n        ";
-        this.model = new Model_1.default({ name: this.name, selectionSet: selectionSet, getGraphQLSchema: input.getGraphQLSchema });
+        this.description = input.description;
+        this.authableFields = __spread(input.primitiveFields, input.scalarFields, input.enumFields, input.unionFields, input.objectFields, input.dateTimeFields, input.pointFields, input.cypherFields);
+        this.settableFields = __spread(input.dateTimeFields, input.enumFields, input.objectFields, input.scalarFields, input.primitiveFields, input.interfaceFields, input.objectFields, input.unionFields, input.pointFields);
     }
     return Node;
 }());

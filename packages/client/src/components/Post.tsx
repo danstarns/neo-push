@@ -77,16 +77,18 @@ function CreateComment({
             });
 
             onCreate({
-                id: response.commentOnPost[0].id as string,
+                id: response.commentOnPost.comments[0].id as string,
                 content,
                 author: {
-                    id: response.commentOnPost[0].author.id as string,
-                    email: response.commentOnPost[0].author.email as string,
+                    id: response.commentOnPost.comments[0].author.id as string,
+                    email: response.commentOnPost.comments[0].author
+                        .email as string,
                 },
                 post: {
                     id: post,
                 },
-                createdAt: response.commentOnPost[0].createdAt as string,
+                createdAt: response.commentOnPost.comments[0]
+                    .createdAt as string,
                 canDelete: true,
             });
             setContent("");
@@ -560,7 +562,7 @@ function Post() {
                     variables: { id },
                 });
 
-                const foundPost = response.Posts[0] as PostInterface;
+                const foundPost = response.posts[0] as PostInterface;
                 if (!foundPost) {
                     history.push(constants.DASHBOARD_PAGE);
                 }

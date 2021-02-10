@@ -42,7 +42,7 @@ describe("comment-custom", () => {
 
             const mutation = gql`
                 {
-                    Comments(where: {id: "${commentId}"}){
+                    comments(where: {id: "${commentId}"}){
                         canDelete
                     }
                 }
@@ -73,7 +73,7 @@ describe("comment-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Comments[0].canDelete).toEqual(
+                expect((response.data as any).comments[0].canDelete).toEqual(
                     true
                 );
             } finally {
@@ -102,7 +102,7 @@ describe("comment-custom", () => {
 
             const mutation = gql`
                 {
-                    Comments(where: {id: "${commentId}"}){
+                    comments(where: {id: "${commentId}"}){
                         canDelete
                     }
                 }
@@ -133,7 +133,7 @@ describe("comment-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Comments[0].canDelete).toEqual(
+                expect((response.data as any).comments[0].canDelete).toEqual(
                     true
                 );
             } finally {
@@ -162,7 +162,7 @@ describe("comment-custom", () => {
 
             const mutation = gql`
                 {
-                    Comments(where: {id: "${commentId}"}){
+                    comments(where: {id: "${commentId}"}){
                         canDelete
                     }
                 }
@@ -192,7 +192,7 @@ describe("comment-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Comments[0].canDelete).toEqual(
+                expect((response.data as any).comments[0].canDelete).toEqual(
                     true
                 );
             } finally {
@@ -225,7 +225,7 @@ describe("comment-custom", () => {
 
             const mutation = gql`
                 {
-                    Comments(where: {id: "${commentId}"}){
+                    comments(where: {id: "${commentId}"}){
                         canDelete
                     }
                 }
@@ -255,7 +255,7 @@ describe("comment-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Comments[0].canDelete).toEqual(
+                expect((response.data as any).comments[0].canDelete).toEqual(
                     false
                 );
             } finally {

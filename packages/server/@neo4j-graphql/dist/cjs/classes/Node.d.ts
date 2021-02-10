@@ -1,7 +1,6 @@
-import { DirectiveNode, NamedTypeNode, GraphQLSchema } from "graphql";
-import { RelationField, CypherField, PrimitiveField, CustomEnumField, CustomScalarField, UnionField, InterfaceField, ObjectField, DateTimeField } from "../types";
-import Auth from "./Auth";
-import Model from "./Model";
+import { DirectiveNode, NamedTypeNode } from "graphql";
+import { RelationField, CypherField, PrimitiveField, CustomEnumField, CustomScalarField, UnionField, InterfaceField, ObjectField, DateTimeField, PointField, Auth } from "../types";
+import Exclude from "./Exclude";
 export interface NodeConstructor {
     name: string;
     relationFields: RelationField[];
@@ -15,9 +14,10 @@ export interface NodeConstructor {
     interfaces: NamedTypeNode[];
     objectFields: ObjectField[];
     dateTimeFields: DateTimeField[];
+    pointFields: PointField[];
     auth?: Auth;
-    timestamps?: boolean;
-    getGraphQLSchema: () => GraphQLSchema;
+    exclude?: Exclude;
+    description?: string;
 }
 declare class Node {
     name: string;
@@ -32,9 +32,12 @@ declare class Node {
     interfaces: NamedTypeNode[];
     objectFields: ObjectField[];
     dateTimeFields: DateTimeField[];
+    pointFields: PointField[];
+    exclude?: Exclude;
     auth?: Auth;
-    timestamps?: boolean;
-    model: Model;
+    description?: string;
+    authableFields: (PrimitiveField | CustomScalarField | CustomEnumField | UnionField | ObjectField | DateTimeField | PointField | CypherField)[];
+    settableFields: (PrimitiveField | CustomScalarField | CustomEnumField | UnionField | ObjectField | DateTimeField | PointField)[];
     constructor(input: NodeConstructor);
 }
 export default Node;

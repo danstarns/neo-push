@@ -1,14 +1,23 @@
-import { AuthRule, Context, Node } from "../classes";
-import { AuthOperations } from "../types";
-declare function createAuthAndParams({ varName, node, chainStr, context, functionType, recurseArray, operation, chainStrOverRide, type, }: {
-    node: Node;
-    context: Context;
+import { Context, Node } from "../classes";
+import { AuthOperations, BaseField } from "../types";
+interface Allow {
     varName: string;
+    parentNode: Node;
     chainStr?: string;
-    functionType?: boolean;
-    recurseArray?: AuthRule[];
-    operation: AuthOperations;
-    chainStrOverRide?: string;
-    type: "bind" | "allow";
+}
+interface Bind {
+    varName: string;
+    parentNode: Node;
+    chainStr?: string;
+}
+declare function createAuthAndParams({ entity, operation, skipRoles, skipIsAuthenticated, allow, context, escapeQuotes, bind, }: {
+    entity: Node | BaseField;
+    operation?: AuthOperations;
+    skipRoles?: boolean;
+    skipIsAuthenticated?: boolean;
+    allow?: Allow;
+    context: Context;
+    escapeQuotes?: boolean;
+    bind?: Bind;
 }): [string, any];
 export default createAuthAndParams;

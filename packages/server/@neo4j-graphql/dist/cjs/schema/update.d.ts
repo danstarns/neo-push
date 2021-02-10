@@ -5,7 +5,9 @@ declare function update({ node, getSchema }: {
     getSchema: () => NeoSchema;
 }): {
     type: string;
-    resolve: (_root: any, _args: any, context: any, resolveInfo: GraphQLResolveInfo) => Promise<any>;
+    resolve: (_root: any, _args: any, context: any, resolveInfo: GraphQLResolveInfo) => Promise<{
+        [x: number]: any;
+    }>;
     args: {
         connect: string;
         disconnect: string;

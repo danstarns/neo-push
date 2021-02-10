@@ -29,6 +29,9 @@ function mergeTypeDefs(typeDefs) {
             if (typeof type === "string") {
                 return __spread(acc, graphql_1.parse(type).definitions);
             }
+            if (typeof type === "function") {
+                return __spread(acc, mergeTypeDefs(type()).definitions);
+            }
             return __spread(acc, graphql_1.parse(graphql_1.print(type)).definitions);
         }, []),
     };

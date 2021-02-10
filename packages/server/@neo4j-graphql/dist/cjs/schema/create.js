@@ -62,7 +62,12 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
+var camelcase_1 = __importDefault(require("camelcase"));
+var pluralize_1 = __importDefault(require("pluralize"));
 var utils_1 = require("../utils");
 var translate_1 = require("../translate");
 function create(_a) {
@@ -70,8 +75,9 @@ function create(_a) {
     function resolve(_root, _args, context, resolveInfo) {
         return __awaiter(this, void 0, void 0, function () {
             var neoSchema, driver, _a, cypher, params, result;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         neoSchema = getSchema();
                         context.neoSchema = neoSchema;
@@ -91,14 +97,16 @@ function create(_a) {
                                 neoSchema: neoSchema,
                             })];
                     case 1:
-                        result = _b.sent();
-                        return [2 /*return*/, Object.values((result[0] || {}))];
+                        result = _c.sent();
+                        return [2 /*return*/, (_b = {},
+                                _b[pluralize_1.default(camelcase_1.default(node.name))] = Object.values((result[0] || {})),
+                                _b)];
                 }
             });
         });
     }
     return {
-        type: "[" + node.name + "]!",
+        type: "Create" + pluralize_1.default(node.name) + "MutationResponse!",
         resolve: resolve,
         args: { input: "[" + node.name + "CreateInput]!" },
     };

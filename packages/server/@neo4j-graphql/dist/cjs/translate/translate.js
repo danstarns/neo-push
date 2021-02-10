@@ -34,18 +34,21 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var camelcase_1 = __importDefault(require("camelcase"));
 var graphql_parse_resolve_info_1 = require("graphql-parse-resolve-info");
 var pluralize_1 = __importDefault(require("pluralize"));
 var classes_1 = require("../classes");
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var create_projection_and_params_1 = __importDefault(require("./create-projection-and-params"));
 var create_create_and_params_1 = __importDefault(require("./create-create-and-params"));
-var auth_1 = require("../auth");
 var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 var create_update_and_params_1 = __importDefault(require("./create-update-and-params"));
 var create_connect_and_params_1 = __importDefault(require("./create-connect-and-params"));
 var create_disconnect_and_params_1 = __importDefault(require("./create-disconnect-and-params"));
+var create_auth_param_1 = __importDefault(require("./create-auth-param"));
+var constants_1 = require("../constants");
 function translateRead(_a) {
+    var _b;
     var resolveTree = _a.resolveTree, node = _a.node, context = _a.context;
     var whereInput = resolveTree.args.where;
     var optionsInput = resolveTree.args.options;
@@ -57,6 +60,7 @@ function translateRead(_a) {
     var skipStr = "";
     var limitStr = "";
     var sortStr = "";
+    var projAuth = "";
     var projStr = "";
     var cypherParams = {};
     var projection = create_projection_and_params_1.default({
@@ -67,6 +71,9 @@ function translateRead(_a) {
     });
     projStr = projection[0];
     cypherParams = __assign(__assign({}, cypherParams), projection[1]);
+    if ((_b = projection[2]) === null || _b === void 0 ? void 0 : _b.authStrs.length) {
+        projAuth = "CALL apoc.util.validate(NOT(" + projection[2].authStrs.join(" AND ") + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
+    }
     if (whereInput) {
         var where = create_where_and_params_1.default({
             whereInput: whereInput,
@@ -80,13 +87,17 @@ function translateRead(_a) {
     if (node.auth) {
         var allowAndParams = create_auth_and_params_1.default({
             operation: "read",
-            node: node,
+            entity: node,
             context: context,
-            varName: varName,
-            type: "allow",
+            allow: {
+                parentNode: node,
+                varName: varName,
+            },
         });
-        cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
-        authStr = allowAndParams[0];
+        if (allowAndParams[0]) {
+            cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
+            authStr = "CALL apoc.util.validate(NOT(" + allowAndParams[0] + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
+        }
     }
     if (optionsInput) {
         var hasSkip = Boolean(optionsInput.skip) || optionsInput.skip === 0;
@@ -121,7 +132,7 @@ function translateRead(_a) {
         matchStr,
         whereStr,
         authStr
-    ], (sortStr ? ["WITH " + varName, sortStr] : []), [
+    ], (sortStr ? ["WITH " + varName, sortStr] : []), (projAuth ? ["WITH " + varName, projAuth] : []), [
         "RETURN " + varName + " " + projStr + " as " + varName,
         skipStr,
         limitStr,
@@ -129,9 +140,11 @@ function translateRead(_a) {
     return [cypher.filter(Boolean).join("\n"), cypherParams];
 }
 function translateCreate(_a) {
+    var _b;
     var context = _a.context, resolveTree = _a.resolveTree, node = _a.node;
-    var fieldsByTypeName = resolveTree.fieldsByTypeName;
-    var _b = resolveTree.args.input.reduce(function (res, input, index) {
+    var fieldsByTypeName = resolveTree.fieldsByTypeName["Create" + pluralize_1.default(node.name) + "MutationResponse"][pluralize_1.default(camelcase_1.default(node.name))]
+        .fieldsByTypeName;
+    var _c = resolveTree.args.input.reduce(function (res, input, index) {
         var varName = "this" + index;
         var create = ["CALL {"];
         var createAndParams = create_create_and_params_1.default({
@@ -147,14 +160,18 @@ function translateCreate(_a) {
         res.createStrs.push(create.join("\n"));
         res.params = __assign(__assign({}, res.params), createAndParams[1]);
         return res;
-    }, { createStrs: [], params: {}, withVars: [] }), createStrs = _b.createStrs, params = _b.params;
+    }, { createStrs: [], params: {}, withVars: [] }), createStrs = _c.createStrs, params = _c.params;
     /* so projection params don't conflict with create params. We only need to call createProjectionAndParams once. */
+    var projAuth = "";
     var projection = create_projection_and_params_1.default({
         node: node,
         context: context,
         fieldsByTypeName: fieldsByTypeName,
         varName: "REPLACE_ME",
     });
+    if ((_b = projection[2]) === null || _b === void 0 ? void 0 : _b.authStrs.length) {
+        projAuth = "CALL apoc.util.validate(NOT(" + projection[2].authStrs.join(" AND ") + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
+    }
     var replacedProjectionParams = Object.entries(projection[1]).reduce(function (res, _a) {
         var _b;
         var _c = __read(_a, 2), key = _c[0], value = _c[1];
@@ -167,28 +184,32 @@ function translateCreate(_a) {
             .replace(/REPLACE_ME/g, "this" + i) + " AS this" + i;
     })
         .join(", ");
-    var cypher = ["" + createStrs.join("\n"), "\nRETURN " + projectionStr];
-    return [cypher.join("\n"), __assign(__assign({}, params), replacedProjectionParams)];
+    var authCalls = createStrs
+        .map(function (_, i) { return projAuth.replace(/\$REPLACE_ME/g, "$projection").replace(/REPLACE_ME/g, "this" + i); })
+        .join("\n");
+    var cypher = ["" + createStrs.join("\n"), authCalls, "\nRETURN " + projectionStr];
+    return [cypher.filter(Boolean).join("\n"), __assign(__assign({}, params), replacedProjectionParams)];
 }
 function translateUpdate(_a) {
+    var _b;
     var resolveTree = _a.resolveTree, node = _a.node, context = _a.context;
     var whereInput = resolveTree.args.where;
     var updateInput = resolveTree.args.update;
     var connectInput = resolveTree.args.connect;
     var disconnectInput = resolveTree.args.disconnect;
     var createInput = resolveTree.args.create;
-    var fieldsByTypeName = resolveTree.fieldsByTypeName;
     var varName = "this";
     var matchStr = "MATCH (" + varName + ":" + node.name + ")";
     var whereStr = "";
-    var allowStr = "";
     var updateStr = "";
     var connectStr = "";
     var disconnectStr = "";
     var createStr = "";
-    var bindStr = "";
+    var projAuth = "";
     var projStr = "";
     var cypherParams = {};
+    var fieldsByTypeName = resolveTree.fieldsByTypeName["Update" + pluralize_1.default(node.name) + "MutationResponse"][pluralize_1.default(camelcase_1.default(node.name))]
+        .fieldsByTypeName;
     if (whereInput) {
         var where = create_where_and_params_1.default({
             whereInput: whereInput,
@@ -199,17 +220,6 @@ function translateUpdate(_a) {
         whereStr = where[0];
         cypherParams = __assign(__assign({}, cypherParams), where[1]);
     }
-    if (node.auth) {
-        var allowAndParams = create_auth_and_params_1.default({
-            operation: "update",
-            node: node,
-            context: context,
-            varName: varName,
-            type: "allow",
-        });
-        cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
-        allowStr = allowAndParams[0];
-    }
     if (updateInput) {
         var updateAndParams = create_update_and_params_1.default({
             context: context,
@@ -219,19 +229,6 @@ function translateUpdate(_a) {
             parentVar: varName,
             withVars: [varName],
         });
-        if (updateAndParams[0]) {
-            if (node.auth) {
-                var allowAndParams = create_auth_and_params_1.default({
-                    operation: "update",
-                    node: node,
-                    context: context,
-                    varName: varName,
-                    type: "allow",
-                });
-                cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
-                allowStr = allowAndParams[0];
-            }
-        }
         updateStr = updateAndParams[0];
         cypherParams = __assign(__assign({}, cypherParams), updateAndParams[1]);
     }
@@ -294,18 +291,6 @@ function translateUpdate(_a) {
             });
         });
     }
-    if (node.auth) {
-        var bindAndParams = create_auth_and_params_1.default({
-            operation: "update",
-            node: node,
-            context: context,
-            varName: varName,
-            type: "bind",
-            chainStrOverRide: varName + "_bind",
-        });
-        cypherParams = __assign(__assign({}, cypherParams), bindAndParams[1]);
-        bindStr = "WITH " + varName + "\n" + bindAndParams[0];
-    }
     var projection = create_projection_and_params_1.default({
         node: node,
         context: context,
@@ -314,17 +299,19 @@ function translateUpdate(_a) {
     });
     projStr = projection[0];
     cypherParams = __assign(__assign({}, cypherParams), projection[1]);
-    var cypher = [
+    if ((_b = projection[2]) === null || _b === void 0 ? void 0 : _b.authStrs.length) {
+        projAuth = "CALL apoc.util.validate(NOT(" + projection[2].authStrs.join(" AND ") + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
+    }
+    var cypher = __spread([
         matchStr,
         whereStr,
-        allowStr,
         updateStr,
         connectStr,
         disconnectStr,
-        createStr,
-        bindStr,
+        createStr
+    ], (projAuth ? ["WITH " + varName, projAuth] : []), [
         "RETURN " + varName + " " + projStr + " AS " + varName,
-    ];
+    ]);
     return [cypher.filter(Boolean).join("\n"), cypherParams];
 }
 function translateDelete(_a) {
@@ -333,7 +320,7 @@ function translateDelete(_a) {
     var varName = "this";
     var matchStr = "MATCH (" + varName + ":" + node.name + ")";
     var whereStr = "";
-    var authStr = "";
+    var preAuthStr = "";
     var cypherParams = {};
     if (whereInput) {
         var where = create_where_and_params_1.default({
@@ -345,21 +332,24 @@ function translateDelete(_a) {
         whereStr = where[0];
         cypherParams = __assign(__assign({}, cypherParams), where[1]);
     }
-    if (node.auth) {
-        var allowAndParams = create_auth_and_params_1.default({
-            operation: "delete",
-            node: node,
-            context: context,
+    var preAuth = create_auth_and_params_1.default({
+        operation: "delete",
+        entity: node,
+        context: context,
+        allow: {
+            parentNode: node,
             varName: varName,
-            type: "allow",
-        });
-        cypherParams = __assign(__assign({}, cypherParams), allowAndParams[1]);
-        authStr = allowAndParams[0];
+        },
+    });
+    if (preAuth[0]) {
+        cypherParams = __assign(__assign({}, cypherParams), preAuth[1]);
+        preAuthStr = "WITH " + varName + "\nCALL apoc.util.validate(NOT(" + preAuth[0] + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
     }
-    var cypher = [matchStr, whereStr, authStr, "DETACH DELETE " + varName];
+    var cypher = [matchStr, whereStr, preAuthStr, "DETACH DELETE " + varName];
     return [cypher.filter(Boolean).join("\n"), cypherParams];
 }
 function translate(_a) {
+    var _b, _c, _d, _e;
     var graphQLContext = _a.context, resolveInfo = _a.resolveInfo;
     var neoSchema = graphQLContext.neoSchema;
     if (!neoSchema || !(neoSchema instanceof classes_1.NeoSchema)) {
@@ -389,37 +379,45 @@ function translate(_a) {
     }
     else {
         operation = "read";
-        node = context.neoSchema.nodes.find(function (x) { return x.name === pluralize_1.default.singular(resolveTree.name); });
+        node = context.neoSchema.nodes.find(function (x) { return camelcase_1.default(x.name) === pluralize_1.default.singular(resolveTree.name); });
     }
-    if (node.auth) {
-        auth_1.checkRoles({ node: node, context: context, operation: operation });
-    }
+    var query = "";
+    var params = {};
     switch (operation) {
         case "create":
-            return translateCreate({
+            _b = __read(translateCreate({
                 resolveTree: resolveTree,
                 node: node,
                 context: context,
-            });
+            }), 2), query = _b[0], params = _b[1];
+            break;
         case "update":
-            return translateUpdate({
+            _c = __read(translateUpdate({
                 resolveTree: resolveTree,
                 node: node,
                 context: context,
-            });
+            }), 2), query = _c[0], params = _c[1];
+            break;
         case "delete":
-            return translateDelete({
+            _d = __read(translateDelete({
                 resolveTree: resolveTree,
                 node: node,
                 context: context,
-            });
+            }), 2), query = _d[0], params = _d[1];
+            break;
         default:
-            return translateRead({
+            _e = __read(translateRead({
                 resolveTree: resolveTree,
                 node: node,
                 context: context,
-            });
+            }), 2), query = _e[0], params = _e[1];
+            break;
     }
+    // Its really difficult to know when users are using the `auth` param. For Simplicity it better to do the check here
+    if (query.includes("$auth.") || query.includes("auth: $auth") || query.includes("auth:$auth")) {
+        params.auth = create_auth_param_1.default({ context: context });
+    }
+    return [query, params];
 }
 exports.default = translate;
 //# sourceMappingURL=translate.js.map

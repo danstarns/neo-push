@@ -141,7 +141,7 @@ function getKindInfo(def) {
         }
     }
 }
-function mergeFieldDirectives(fields, extFields) {
+function mergeFields(fields, extFields) {
     if (fields === void 0) { fields = []; }
     if (extFields === void 0) { extFields = []; }
     var result = __spread(fields);
@@ -162,7 +162,7 @@ function extendDefinition(def, ext) {
     // @ts-ignore
     var directives = __spread((def.directives || []), (ext.directives || []));
     // @ts-ignore
-    var fields = mergeFieldDirectives(def.fields, ext.fields);
+    var fields = mergeFields(def.fields, ext.fields);
     var loc = extendLocation(def.loc, ext.loc);
     switch (def.kind) {
         case graphql_1.Kind.SCHEMA_DEFINITION: {

@@ -52,16 +52,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var neo4j_driver_1 = require("neo4j-driver");
 var utils_1 = require("../utils");
-var get_field_type_meta_1 = __importDefault(require("./get-field-type-meta"));
 var classes_1 = require("../classes");
+var graphql_arg_to_compose_1 = __importDefault(require("./graphql-arg-to-compose"));
+var create_auth_and_params_1 = __importDefault(require("../translate/create-auth-and-params"));
+var create_auth_param_1 = __importDefault(require("../translate/create-auth-param"));
+var constants_1 = require("../constants");
 /**
  * Called on custom (Queries & Mutations "TOP LEVEL") with a @cypher directive. Not to mistaken for @cypher type fields.
  */
 function cypherResolver(_a) {
-    var defaultAccessMode = _a.defaultAccessMode, field = _a.field, statement = _a.statement, getSchema = _a.getSchema;
+    var field = _a.field, statement = _a.statement, getSchema = _a.getSchema;
     function resolve(_root, args, graphQLContext) {
         return __awaiter(this, void 0, void 0, function () {
-            var neoSchema, driver, context, safeJWT, result, values;
+            var neoSchema, driver, context, cypherStrs, params, preAuth, result, values;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -75,12 +78,19 @@ function cypherResolver(_a) {
                             neoSchema: neoSchema,
                             driver: driver,
                         });
-                        safeJWT = context.getJWTSafe();
+                        cypherStrs = [];
+                        params = __assign(__assign({}, args), { auth: create_auth_param_1.default({ context: context }) });
+                        preAuth = create_auth_and_params_1.default({ entity: field, context: context });
+                        if (preAuth[0]) {
+                            params = __assign(__assign({}, params), preAuth[1]);
+                            cypherStrs.push("CALL apoc.util.validate(NOT(" + preAuth[0] + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])");
+                        }
+                        cypherStrs.push(statement);
                         return [4 /*yield*/, utils_1.execute({
-                                cypher: statement,
-                                params: utils_1.serialize(__assign(__assign({}, args), { jwt: safeJWT })),
+                                cypher: cypherStrs.join("\n"),
+                                params: params,
                                 driver: driver,
-                                defaultAccessMode: defaultAccessMode,
+                                defaultAccessMode: "WRITE",
                                 neoSchema: neoSchema,
                                 raw: true,
                             })];
@@ -98,9 +108,9 @@ function cypherResolver(_a) {
                                 return Number(value);
                             }
                             if (value.identity && value.labels && value.properties) {
-                                return utils_1.deserialize(value.properties);
+                                return value.properties;
                             }
-                            return utils_1.deserialize(value);
+                            return value;
                         });
                         if (!field.typeMeta.array) {
                             return [2 /*return*/, values[0]];
@@ -113,15 +123,7 @@ function cypherResolver(_a) {
     return {
         type: field.typeMeta.pretty,
         resolve: resolve,
-        args: field.arguments.reduce(function (args, arg) {
-            var _a;
-            var meta = get_field_type_meta_1.default(arg);
-            return __assign(__assign({}, args), (_a = {}, _a[arg.name.value] = {
-                type: meta.pretty,
-                description: arg.description,
-                defaultValue: arg.defaultValue,
-            }, _a));
-        }, {}),
+        args: graphql_arg_to_compose_1.default(field.arguments),
     };
 }
 exports.default = cypherResolver;

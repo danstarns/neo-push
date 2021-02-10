@@ -1,14 +1,15 @@
-import { OGM } from "./src/graphql";
+import { ogm } from "./src/graphql";
 import * as neo4j from "./src/neo4j";
 import createDebug from "./src/debug";
 import faker from "faker";
 import { hashPassword } from "./src/utils";
+import { Model } from "@neo4j/graphql";
 
 const debug = createDebug("Seeder");
-const User = OGM.model("User");
-const Blog = OGM.model("Blog");
-const Post = OGM.model("Post");
-const Comment = OGM.model("Comment");
+const User = ogm.model("User") as Model;
+const Blog = ogm.model("Blog") as Model;
+const Post = ogm.model("Post") as Model;
+const Comment = ogm.model("Comment") as Model;
 
 const defaultEmail = "admin@admin.com";
 const defaultPassword = "password";
@@ -20,7 +21,7 @@ async function main() {
 
     await Promise.all([User, Blog, Post, Comment].map((m) => m.delete({})));
 
-    const users = await User.create({
+    const { users } = await User.create({
         input: await Promise.all(
             [
                 [defaultEmail, defaultPassword],

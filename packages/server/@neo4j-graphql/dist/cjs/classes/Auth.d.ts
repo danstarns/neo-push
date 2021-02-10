@@ -5,9 +5,6 @@ export declare type AuthRule = {
     allow?: {
         [k: string]: any;
     } | "*";
-    bind?: {
-        [k: string]: any;
-    } | "*";
     roles?: string[];
 };
 export interface AuthConstructor {

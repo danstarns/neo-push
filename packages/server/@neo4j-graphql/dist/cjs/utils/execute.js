@@ -35,23 +35,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-var deserialize_1 = __importDefault(require("./deserialize"));
-var serialize_1 = __importDefault(require("./serialize"));
+var constants_1 = require("../constants");
+// https://stackoverflow.com/a/58632373/10687857
+var _a = process.env, npm_package_version = _a.npm_package_version, npm_package_name = _a.npm_package_name;
 function execute(input) {
     return __awaiter(this, void 0, void 0, function () {
-        var session, serializedParams_1, debug, result, error_1;
+        var session, debug, result, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     session = input.driver.session({ defaultAccessMode: input.defaultAccessMode });
+                    // @ts-ignore
+                    input.driver._userAgent = npm_package_version + "/" + npm_package_name;
                     _a.label = 1;
                 case 1:
                     _a.trys.push([1, 3, 4, 6]);
-                    serializedParams_1 = serialize_1.default(input.params);
                     if (input.neoSchema.options.debug) {
                         debug = console.log;
                         if (typeof input.neoSchema.options.debug === "function") {
@@ -60,10 +59,10 @@ function execute(input) {
                         debug("=======Cypher=======");
                         debug(input.cypher);
                         debug("=======Params=======");
-                        debug(JSON.stringify(serializedParams_1, null, 2));
+                        debug(JSON.stringify(input.params, null, 2));
                     }
                     return [4 /*yield*/, session[input.defaultAccessMode.toLowerCase() + "Transaction"](function (tx) {
-                            return tx.run(input.cypher, serializedParams_1);
+                            return tx.run(input.cypher, input.params);
                         })];
                 case 2:
                     result = _a.sent();
@@ -73,11 +72,14 @@ function execute(input) {
                     if (input.raw) {
                         return [2 /*return*/, result];
                     }
-                    return [2 /*return*/, deserialize_1.default(result.records.map(function (r) { return r.toObject(); }))];
+                    return [2 /*return*/, result.records.map(function (r) { return r.toObject(); })];
                 case 3:
                     error_1 = _a.sent();
-                    if (error_1.message.includes("Caused by: java.lang.RuntimeException: Forbidden")) {
+                    if (error_1.message.includes("Caused by: java.lang.RuntimeException: " + constants_1.AUTH_FORBIDDEN_ERROR)) {
                         throw new Error("Forbidden");
+                    }
+                    if (error_1.message.includes("Caused by: java.lang.RuntimeException: " + constants_1.AUTH_UNAUTHENTICATED_ERROR)) {
+                        throw new Error("Unauthenticated");
                     }
                     throw error_1;
                 case 4: return [4 /*yield*/, session.close()];

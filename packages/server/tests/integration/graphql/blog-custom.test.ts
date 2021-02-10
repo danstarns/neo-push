@@ -34,7 +34,7 @@ describe("blog-custom", () => {
 
             const mutation = gql`
                 {
-                    Blogs(where: {id: "${blogId}"}){
+                    blogs(where: {id: "${blogId}"}){
                         isCreator
                     }
                 }
@@ -63,7 +63,7 @@ describe("blog-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Blogs[0].isCreator).toEqual(true);
+                expect((response.data as any).blogs[0].isCreator).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -82,7 +82,7 @@ describe("blog-custom", () => {
 
             const mutation = gql`
                 {
-                    Blogs(where: {id: "${blogId}"}){
+                    blogs(where: {id: "${blogId}"}){
                         isCreator
                     }
                 }
@@ -112,7 +112,7 @@ describe("blog-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Blogs[0].isCreator).toBeFalsy();
+                expect((response.data as any).blogs[0].isCreator).toBeFalsy();
             } finally {
                 await session.close();
             }
@@ -133,7 +133,7 @@ describe("blog-custom", () => {
 
             const mutation = gql`
                 {
-                    Blogs(where: {id: "${blogId}"}){
+                    blogs(where: {id: "${blogId}"}){
                         isAuthor
                     }
                 }
@@ -162,7 +162,7 @@ describe("blog-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Blogs[0].isAuthor).toEqual(true);
+                expect((response.data as any).blogs[0].isAuthor).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -181,7 +181,7 @@ describe("blog-custom", () => {
 
             const mutation = gql`
                 {
-                    Blogs(where: {id: "${blogId}"}){
+                    blogs(where: {id: "${blogId}"}){
                         isAuthor
                     }
                 }
@@ -211,7 +211,7 @@ describe("blog-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Blogs[0].isAuthor).toBeFalsy();
+                expect((response.data as any).blogs[0].isAuthor).toBeFalsy();
             } finally {
                 await session.close();
             }

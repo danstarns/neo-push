@@ -75,7 +75,7 @@ function CreatePost({
                 });
 
                 history.push(
-                    constants.POST_PAGE + "/" + response.createPosts[0].id
+                    constants.POST_PAGE + "/" + response.createPosts.posts[0].id
                 );
             } catch (e) {
                 setError(e.message);
@@ -336,7 +336,7 @@ function AdminModal(props: {
 
             props.setBlog((b) => ({
                 ...b,
-                authors: response.updateBlogs[0].authors,
+                authors: response.updateBlogs.blogs[0].authors,
             }));
 
             setAuthorEmail("");
@@ -358,7 +358,7 @@ function AdminModal(props: {
 
             props.setBlog((b) => ({
                 ...b,
-                authors: response.updateBlogs[0].authors,
+                authors: response.updateBlogs.blogs[0].authors,
             }));
 
             setAuthorEmail("");
@@ -479,7 +479,7 @@ function Blog() {
                     variables: { id },
                 });
 
-                const foundBlog = response.Blogs[0];
+                const foundBlog = response.blogs[0];
                 if (!foundBlog) {
                     history.push(constants.DASHBOARD_PAGE);
                 }

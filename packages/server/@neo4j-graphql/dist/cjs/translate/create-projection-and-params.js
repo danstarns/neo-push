@@ -10,6 +10,17 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -35,12 +46,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
-var auth_1 = require("../auth");
 var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
+var create_auth_param_1 = __importDefault(require("./create-auth-param"));
+var constants_1 = require("../constants");
 function createProjectionAndParams(_a) {
     var fieldsByTypeName = _a.fieldsByTypeName, node = _a.node, context = _a.context, chainStr = _a.chainStr, varName = _a.varName, chainStrOverRide = _a.chainStrOverRide;
     function reducer(res, _a) {
-        var _b = __read(_a, 2), key = _b[0], field = _b[1];
+        var _b, _c;
+        var _d = __read(_a, 2), k = _d[0], field = _d[1];
+        var key = k;
+        var alias = field.alias !== field.name ? field.alias : undefined;
+        if (alias) {
+            key = field.name;
+        }
         var param = "";
         if (chainStr) {
             param = chainStr + "_" + key;
@@ -55,7 +73,29 @@ function createProjectionAndParams(_a) {
         var optionsInput = field.args.options;
         var fieldFields = field.fieldsByTypeName;
         var cypherField = node.cypherFields.find(function (x) { return x.fieldName === key; });
+        var relationField = node.relationFields.find(function (x) { return x.fieldName === key; });
+        var pointField = node.pointFields.find(function (x) { return x.fieldName === key; });
+        var dateTimeField = node.dateTimeFields.find(function (x) { return x.fieldName === key; });
+        var authableField = node.authableFields.find(function (x) { return x.fieldName === key; });
+        if (authableField) {
+            if (authableField.auth) {
+                var authAndParams = create_auth_and_params_1.default({
+                    entity: authableField,
+                    operation: "read",
+                    context: context,
+                    allow: { parentNode: node, varName: varName, chainStr: param },
+                });
+                if (authAndParams[0]) {
+                    if (!res.meta) {
+                        res.meta = { authStrs: [] };
+                    }
+                    res.meta.authStrs.push(authAndParams[0]);
+                    res.params = __assign(__assign({}, res.params), authAndParams[1]);
+                }
+            }
+        }
         if (cypherField) {
+            var projectionAuthStr = "";
             var projectionStr = "";
             var isPrimitive = ["ID", "String", "Boolean", "Float", "Int", "DateTime"].includes(cypherField.typeMeta.name);
             var referenceNode = context.neoSchema.nodes.find(function (x) { return x.name === cypherField.typeMeta.name; });
@@ -69,8 +109,10 @@ function createProjectionAndParams(_a) {
                 });
                 projectionStr = recurse[0];
                 res.params = __assign(__assign({}, res.params), recurse[1]);
+                if ((_b = recurse[2]) === null || _b === void 0 ? void 0 : _b.authStrs.length) {
+                    projectionAuthStr = recurse[2].authStrs.join(" AND ");
+                }
             }
-            var safeJWT = context.getJWTSafe();
             var apocParams = Object.entries(field.args).reduce(function (r, entry) {
                 var _a;
                 var argName = param + "_" + entry[0];
@@ -78,10 +120,12 @@ function createProjectionAndParams(_a) {
                     strs: __spread(r.strs, [entry[0] + ": $" + argName]),
                     params: __assign(__assign({}, r.params), (_a = {}, _a[argName] = entry[1], _a)),
                 };
-            }, { strs: ["jwt: $jwt"], params: {} });
-            res.params = __assign(__assign(__assign({}, res.params), apocParams.params), { jwt: safeJWT });
+            }, { strs: ["auth: $auth"], params: {} });
+            res.params = __assign(__assign(__assign({}, res.params), apocParams.params), { auth: create_auth_param_1.default({ context: context }) });
             var expectMultipleValues = referenceNode && cypherField.typeMeta.array ? "true" : "false";
-            var apocStr = (!isPrimitive ? param + " IN" : "") + " apoc.cypher.runFirstColumn(\"" + cypherField.statement + "\", {this: " + (chainStr || varName) + (apocParams.strs.length ? ", " + apocParams.strs.join(", ") : "") + "}, " + expectMultipleValues + ") " + (projectionStr ? "| " + param + " " + projectionStr : "");
+            var apocStr = (!isPrimitive ? param + " IN" : "") + " apoc.cypher.runFirstColumn(\"" + cypherField.statement + "\", {this: " + (chainStr || varName) + (apocParams.strs.length ? ", " + apocParams.strs.join(", ") : "") + "}, " + expectMultipleValues + ") " + (projectionAuthStr
+                ? "WHERE apoc.util.validatePredicate(NOT(" + projectionAuthStr + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])"
+                : "") + " " + (projectionStr ? "| " + param + " " + projectionStr : "");
             if (!cypherField.typeMeta.array) {
                 res.projection.push(key + ": head([" + apocStr + "])");
                 return res;
@@ -94,7 +138,6 @@ function createProjectionAndParams(_a) {
             }
             return res;
         }
-        var relationField = node.relationFields.find(function (x) { return x.fieldName === key; });
         if (relationField) {
             var referenceNode = context.neoSchema.nodes.find(function (x) { return x.name === relationField.typeMeta.name; });
             var nodeMatchStr = "(" + (chainStr || varName) + ")";
@@ -112,13 +155,11 @@ function createProjectionAndParams(_a) {
                 ];
                 var headStrs_1 = [];
                 referenceNodes.forEach(function (refNode) {
-                    var _param = param + "_" + refNode.name;
-                    var innenrHeadStr = [];
-                    innenrHeadStr.push("[");
-                    innenrHeadStr.push(param + " IN [" + param + "] WHERE \"" + refNode.name + "\" IN labels (" + param + ")");
-                    if (refNode.auth) {
-                        auth_1.checkRoles({ node: refNode, context: context, operation: "read" });
-                    }
+                    var _a, _b;
+                    var varNameOverRide = param + "_" + refNode.name;
+                    var innerHeadStr = [];
+                    innerHeadStr.push("[");
+                    innerHeadStr.push(param + " IN [" + param + "] WHERE \"" + refNode.name + "\" IN labels (" + param + ")");
                     var thisWhere = field.args[refNode.name];
                     if (thisWhere) {
                         var whereAndParams = create_where_and_params_1.default({
@@ -126,25 +167,25 @@ function createProjectionAndParams(_a) {
                             node: refNode,
                             varName: param,
                             whereInput: thisWhere,
-                            chainStrOverRide: _param,
+                            chainStrOverRide: varNameOverRide,
                         });
-                        innenrHeadStr.push("AND " + whereAndParams[0].replace("WHERE", ""));
+                        innerHeadStr.push("AND " + whereAndParams[0].replace("WHERE", ""));
                         res.params = __assign(__assign({}, res.params), whereAndParams[1]);
                     }
-                    if (refNode.auth) {
-                        var allowAndParams = create_auth_and_params_1.default({
-                            node: refNode,
-                            context: context,
+                    var preAuth = create_auth_and_params_1.default({
+                        entity: refNode,
+                        operation: "read",
+                        context: context,
+                        allow: {
+                            parentNode: refNode,
                             varName: param,
-                            chainStrOverRide: _param + "_auth",
-                            functionType: true,
-                            operation: "read",
-                            type: "allow",
-                        });
-                        innenrHeadStr.push("AND " + allowAndParams[0]);
-                        res.params = __assign(__assign({}, res.params), allowAndParams[1]);
+                            chainStr: varNameOverRide,
+                        },
+                    });
+                    if (preAuth[0]) {
+                        innerHeadStr.push("AND apoc.util.validatePredicate(NOT(" + preAuth[0] + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])");
+                        res.params = __assign(__assign({}, res.params), preAuth[1]);
                     }
-                    innenrHeadStr.push("| " + param);
                     if (field.fieldsByTypeName[refNode.name]) {
                         var recurse_1 = createProjectionAndParams({
                             // @ts-ignore
@@ -152,16 +193,21 @@ function createProjectionAndParams(_a) {
                             node: refNode,
                             context: context,
                             varName: param,
-                            chainStrOverRide: _param,
+                            chainStrOverRide: varNameOverRide,
                         });
-                        innenrHeadStr.push(__spread(["{ __resolveType: \"" + refNode.name + "\", "], recurse_1[0].replace("{", "").split("")).join(""));
+                        if ((_a = recurse_1[2]) === null || _a === void 0 ? void 0 : _a.authStrs.length) {
+                            innerHeadStr.push("AND apoc.util.validatePredicate(NOT(" + ((_b = recurse_1[2]) === null || _b === void 0 ? void 0 : _b.authStrs.join(" AND ")) + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])");
+                        }
+                        innerHeadStr.push("| " + param);
+                        innerHeadStr.push(__spread(["{ __resolveType: \"" + refNode.name + "\", "], recurse_1[0].replace("{", "").split("")).join(""));
                         res.params = __assign(__assign({}, res.params), recurse_1[1]);
                     }
                     else {
-                        innenrHeadStr.push("{ __resolveType: \"" + refNode.name + "\" } ");
+                        innerHeadStr.push("| " + param);
+                        innerHeadStr.push("{ __resolveType: \"" + refNode.name + "\" } ");
                     }
-                    innenrHeadStr.push("]");
-                    headStrs_1.push(innenrHeadStr.join(" "));
+                    innerHeadStr.push("]");
+                    headStrs_1.push(innerHeadStr.join(" "));
                 });
                 unionStrs.push(headStrs_1.join(" + "));
                 unionStrs.push(")");
@@ -185,12 +231,9 @@ function createProjectionAndParams(_a) {
                 res.projection.push(unionStrs.join(" "));
                 return res;
             }
-            if (referenceNode.auth) {
-                auth_1.checkRoles({ node: referenceNode, context: context, operation: "read" });
-            }
             var whereStr = "";
             var projectionStr = "";
-            var authStr = "";
+            var authStrs = [];
             if (whereInput) {
                 var where = create_where_and_params_1.default({
                     whereInput: whereInput,
@@ -201,17 +244,18 @@ function createProjectionAndParams(_a) {
                 whereStr = where[0];
                 res.params = __assign(__assign({}, res.params), where[1]);
             }
-            if (referenceNode.auth) {
-                var allowAndParams = create_auth_and_params_1.default({
-                    node: referenceNode,
-                    context: context,
+            var preAuth = create_auth_and_params_1.default({
+                entity: referenceNode,
+                operation: "read",
+                context: context,
+                allow: {
+                    parentNode: referenceNode,
                     varName: varName + "_" + key,
-                    functionType: true,
-                    operation: "read",
-                    type: "allow",
-                });
-                authStr = allowAndParams[0];
-                res.params = __assign(__assign({}, res.params), allowAndParams[1]);
+                },
+            });
+            if (preAuth[0]) {
+                authStrs.push(preAuth[0]);
+                res.params = __assign(__assign({}, res.params), preAuth[1]);
             }
             var recurse = createProjectionAndParams({
                 fieldsByTypeName: fieldFields,
@@ -222,8 +266,13 @@ function createProjectionAndParams(_a) {
             });
             projectionStr = recurse[0];
             res.params = __assign(__assign({}, res.params), recurse[1]);
+            if ((_c = recurse[2]) === null || _c === void 0 ? void 0 : _c.authStrs.length) {
+                authStrs = __spread(authStrs, recurse[2].authStrs);
+            }
             var pathStr = "" + nodeMatchStr + inStr + relTypeStr + outStr + nodeOutStr;
-            var innerStr = pathStr + " " + whereStr + " " + (authStr ? (!whereStr ? "WHERE " : "") + " " + (whereStr ? "AND " : "") + " " + authStr : "") + " | " + param + " " + projectionStr;
+            var innerStr = pathStr + " " + whereStr + " " + (authStrs.length
+                ? (!whereStr ? "WHERE " : "") + " " + (whereStr ? "AND " : "") + " apoc.util.validatePredicate(NOT(" + authStrs.join(" AND ") + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])"
+                : "") + " | " + param + " " + projectionStr;
             var nestedQuery = void 0;
             if (optionsInput) {
                 var sortLimitStr = "";
@@ -256,14 +305,37 @@ function createProjectionAndParams(_a) {
             res.projection.push(nestedQuery);
             return res;
         }
-        res.projection.push("." + key);
+        if (pointField) {
+            var isArray = pointField.typeMeta.array;
+            var _e = fieldFields[pointField.typeMeta.name], crs = _e.crs, point = __rest(_e, ["crs"]);
+            var fields = [];
+            // Sadly need to select the whole point object due to the risk of height/z
+            // being selected on a 2D point, to which the database will throw an error
+            if (point) {
+                fields.push(isArray ? "point:p" : "point: " + varName + "." + key);
+            }
+            if (crs) {
+                fields.push(isArray ? "crs: p.crs" : "crs: " + varName + "." + key + ".crs");
+            }
+            res.projection.push(isArray
+                ? key + ": [p in " + varName + "." + key + " | { " + fields.join(", ") + " }]"
+                : key + ": { " + fields.join(", ") + " }");
+        }
+        else if (dateTimeField) {
+            res.projection.push(dateTimeField.typeMeta.array
+                ? key + ": [ dt in " + varName + "." + key + " | apoc.date.convertFormat(toString(dt), \"iso_zoned_date_time\", \"iso_offset_date_time\") ]"
+                : key + ": apoc.date.convertFormat(toString(" + varName + "." + key + "), \"iso_zoned_date_time\", \"iso_offset_date_time\")");
+        }
+        else {
+            res.projection.push("." + key);
+        }
         return res;
     }
     var _b = Object.entries(fieldsByTypeName[node.name]).reduce(reducer, {
         projection: [],
         params: {},
-    }), projection = _b.projection, params = _b.params;
-    return ["{ " + projection.join(", ") + " }", params];
+    }), projection = _b.projection, params = _b.params, meta = _b.meta;
+    return ["{ " + projection.join(", ") + " }", params, meta];
 }
 exports.default = createProjectionAndParams;
 //# sourceMappingURL=create-projection-and-params.js.map

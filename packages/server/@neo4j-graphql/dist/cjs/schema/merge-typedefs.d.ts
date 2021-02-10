@@ -1,3 +1,4 @@
 import { DocumentNode } from "graphql";
-declare function mergeTypeDefs(typeDefs: (string | DocumentNode) | (string | DocumentNode)[]): DocumentNode;
+import { TypeDefs } from "../types";
+declare function mergeTypeDefs(typeDefs: TypeDefs): DocumentNode;
 export default mergeTypeDefs;

@@ -1,5 +1,8 @@
 import { FieldsByTypeName } from "graphql-parse-resolve-info";
 import { Context, Node } from "../classes";
+interface ProjectionMeta {
+    authStrs: string[];
+}
 declare function createProjectionAndParams({ fieldsByTypeName, node, context, chainStr, varName, chainStrOverRide, }: {
     fieldsByTypeName: FieldsByTypeName;
     node: Node;
@@ -7,5 +10,5 @@ declare function createProjectionAndParams({ fieldsByTypeName, node, context, ch
     chainStr?: string;
     varName: string;
     chainStrOverRide?: string;
-}): [string, any];
+}): [string, any, ProjectionMeta?];
 export default createProjectionAndParams;

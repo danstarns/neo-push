@@ -1,63 +1,38 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-function getFieldTypeMeta(field) {
-    // @ts-ignore
-    var result = {};
-    switch (field.type.kind) {
-        case "NonNullType":
-            switch (field.type.type.kind) {
-                case "ListType":
-                    result = {
-                        // @ts-ignore
-                        name: field.type.type.type.name.value,
-                        array: true,
-                        required: true,
-                        // @ts-ignore
-                        pretty: "[" + field.type.type.type.name.value + "]!",
-                    };
-                    break;
-                case "NamedType":
-                    result = {
-                        name: field.type.type.name.value,
-                        array: false,
-                        required: true,
-                        pretty: field.type.type.name.value + "!",
-                    };
-                    break;
-            }
-            break;
+function getName(type) {
+    return type.kind === "NamedType" ? type.name.value : getName(type.type);
+}
+function getPrettyName(type) {
+    var result;
+    switch (type.kind) {
         case "NamedType":
-            result = {
-                name: field.type.name.value,
-                array: false,
-                required: false,
-                pretty: "" + field.type.name.value,
-            };
+            result = type.name.value;
+            break;
+        case "NonNullType":
+            result = getPrettyName(type.type) + "!";
             break;
         case "ListType":
-            switch (field.type.type.kind) {
-                case "NamedType":
-                    result = {
-                        // @ts-ignore
-                        name: field.type.type.name.value,
-                        array: true,
-                        required: false,
-                        pretty: "[" + field.type.type.name.value + "]",
-                    };
-                    break;
-                case "NonNullType":
-                    result = {
-                        // @ts-ignore
-                        name: field.type.type.type.name.value,
-                        array: true,
-                        required: true,
-                        // @ts-ignore
-                        pretty: "[" + field.type.type.type.name.value + "!]",
-                    };
-                    break;
-            }
+            result = "[" + getPrettyName(type.type) + "]";
+            break;
     }
     return result;
+}
+function getFieldTypeMeta(field) {
+    var name = getName(field.type);
+    var prettyName = getPrettyName(field.type);
+    var array = /\[.+\]/g.test(prettyName);
+    var inputName = "" + (["Point", "CartesianPoint"].includes(name) ? name + "Input" : name);
+    return {
+        name: name,
+        array: array,
+        required: prettyName.includes("!"),
+        pretty: prettyName,
+        input: {
+            name: inputName,
+            pretty: "" + (array ? "[" : "") + inputName + (array ? "]" : ""),
+        },
+    };
 }
 exports.default = getFieldTypeMeta;
 //# sourceMappingURL=get-field-type-meta.js.map

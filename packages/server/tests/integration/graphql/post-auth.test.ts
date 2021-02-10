@@ -34,7 +34,9 @@ describe("post-auth", () => {
         const mutation = gql`
             mutation {
                 createPosts(input: [{id: "${postId}", title: "some post", content: "content" author: {connect: {where: {id: "invalid"}}}}]){
-                    id
+                    posts {
+                        id
+                    }
                 }
             }
 
@@ -63,59 +65,6 @@ describe("post-auth", () => {
             throw new Error("invalid");
         } catch (error) {
             expect(error.message).toEqual("Forbidden");
-        } finally {
-            await session.close();
-        }
-    });
-
-    test("should throw error when user trying to edit a post when they are not the author or part of the blog (readonly)", async () => {
-        const session = driver.session();
-
-        const userId = generate({
-            charset: "alphabetic",
-        });
-
-        const postId = generate({
-            charset: "alphabetic",
-        });
-
-        const mutation = gql`
-            mutation {
-               updatePosts(where:{id: "${postId}"}, update: {id: "${userId}"}) {
-                   id
-               }
-            }
-        `;
-
-        const token = jsonwebtoken.sign(
-            { sub: userId },
-            process.env.JWT_SECRET as string
-        );
-
-        const socket = new Socket({ readable: true });
-        const req = new IncomingMessage(socket);
-        req.headers.authorization = `Bearer ${token}`;
-
-        try {
-            await session.run(`
-                CREATE (:Post {id: "${postId}"})<-[:HAS_BLOG]-(:User {id: "invalid"})
-            `);
-
-            const apolloServer = await server({ req });
-
-            const response = await apolloServer.mutate({
-                mutation,
-            });
-
-            if (response.errors) {
-                throw new Error(response.errors[0].message);
-            }
-
-            throw new Error("invalid");
-        } catch (error) {
-            expect(error.message).toEqual(
-                'Field "id" is not defined by type "PostUpdateInput".'
-            );
         } finally {
             await session.close();
         }

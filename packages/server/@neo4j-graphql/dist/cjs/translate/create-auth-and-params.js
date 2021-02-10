@@ -26,106 +26,168 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-function createAuthAndParams(_a) {
-    var _b;
-    var varName = _a.varName, node = _a.node, chainStr = _a.chainStr, context = _a.context, functionType = _a.functionType, recurseArray = _a.recurseArray, operation = _a.operation, chainStrOverRide = _a.chainStrOverRide, type = _a.type;
-    var rules = (((_b = node === null || node === void 0 ? void 0 : node.auth) === null || _b === void 0 ? void 0 : _b.rules) || []).filter(function (r) { var _a; return ((_a = r.operations) === null || _a === void 0 ? void 0 : _a.includes(operation)) && r[type] && r.isAuthenticated !== false; });
-    if (rules.filter(function (x) { return x[type] === "*"; }).length && !recurseArray) {
+var dot_prop_1 = __importDefault(require("dot-prop"));
+var constants_1 = require("../constants");
+function createRolesStr(_a) {
+    var roles = _a.roles, escapeQuotes = _a.escapeQuotes;
+    var quote = escapeQuotes ? "\\\"" : "\"";
+    var joined = roles.map(function (r) { return "" + quote + r + quote; }).join(", ");
+    return "ANY(r IN [" + joined + "] WHERE ANY(rr IN $auth.roles WHERE r = rr))";
+}
+function createAuthPredicate(_a) {
+    var rule = _a.rule, node = _a.node, varName = _a.varName, context = _a.context, chainStr = _a.chainStr, kind = _a.kind;
+    var allowOrBind = rule[kind];
+    if (!allowOrBind) {
         return ["", {}];
     }
-    function reducer(res, ruleValue, index) {
-        var param = "";
-        if (chainStr && !chainStrOverRide) {
-            param = chainStr;
+    var result = Object.entries(allowOrBind).reduce(function (res, _a) {
+        var _b = __read(_a, 2), key = _b[0], value = _b[1];
+        if (key === "AND" || key === "OR") {
+            var inner_1 = [];
+            value.forEach(function (v, i) {
+                var _a;
+                var recurse = createAuthPredicate({
+                    rule: (_a = {}, _a[kind] = v, _a),
+                    varName: varName,
+                    node: node,
+                    chainStr: chainStr + "_" + key + i,
+                    context: context,
+                    kind: kind,
+                });
+                inner_1.push(recurse[0]);
+                res.params = __assign(__assign({}, res.params), recurse[1]);
+            });
+            res.strs.push("(" + inner_1.join(" " + key + " ") + ")");
         }
-        else if (chainStrOverRide) {
-            param = "" + chainStrOverRide + index;
+        var authableField = node.authableFields.find(function (field) { return field.fieldName === key; });
+        if (authableField) {
+            var jwt = context.getJWTSafe();
+            var _param = chainStr + "_" + key;
+            res.params[_param] = dot_prop_1.default.get({ value: jwt }, "value." + value);
+            res.strs.push(varName + "." + key + " = $" + _param);
         }
-        else {
-            param = varName + "_auth" + index;
+        var relationField = node.relationFields.find(function (x) { return key === x.fieldName; });
+        if (relationField) {
+            var refNode_1 = context.neoSchema.nodes.find(function (x) { return x.name === relationField.typeMeta.name; });
+            var inStr = relationField.direction === "IN" ? "<-" : "-";
+            var outStr = relationField.direction === "OUT" ? "->" : "-";
+            var relTypeStr = "[:" + relationField.type + "]";
+            var relationVarName_1 = relationField.fieldName;
+            var resultStr_1 = [
+                "EXISTS((" + varName + ")" + inStr + relTypeStr + outStr + "(:" + relationField.typeMeta.name + "))",
+                "AND " + (kind === "allow" ? "ANY" : "ALL") + "(" + relationVarName_1 + " IN [(" + varName + ")" + inStr + relTypeStr + outStr + "(" + relationVarName_1 + ":" + relationField.typeMeta.name + ") | " + relationVarName_1 + "] WHERE ",
+            ].join(" ");
+            Object.entries(value).forEach(function (_a) {
+                var _b, _c;
+                var _d = __read(_a, 2), k = _d[0], v = _d[1];
+                var recurse = createAuthPredicate({
+                    node: refNode_1,
+                    context: context,
+                    chainStr: chainStr + "_" + key,
+                    varName: relationVarName_1,
+                    rule: (_b = {}, _b[kind] = (_c = {}, _c[k] = v, _c), _b),
+                    kind: kind,
+                });
+                resultStr_1 += recurse[0];
+                resultStr_1 += ")"; // close ALL
+                res.params = __assign(__assign({}, res.params), recurse[1]);
+                res.strs.push(resultStr_1);
+            });
         }
-        Object.entries(ruleValue).forEach(function (_a) {
-            var _b = __read(_a, 2), key = _b[0], value = _b[1];
-            switch (key) {
-                case "AND":
-                case "OR":
-                    {
-                        var inner_1 = [];
-                        value.forEach(function (v, i) {
-                            var _a;
-                            var recurse = createAuthAndParams({
-                                recurseArray: [(_a = {}, _a[type] = v, _a)],
-                                varName: varName,
-                                node: node,
-                                chainStr: param + "_" + key + i,
-                                context: context,
-                                operation: operation,
-                                type: type,
-                            });
-                            inner_1.push(recurse[0]
-                                .replace("CALL apoc.util.validate(NOT(", "")
-                                .replace("), \"Forbidden\", [0])", ""));
-                            res.params = __assign(__assign({}, res.params), recurse[1]);
-                        });
-                        res.strs.push("(" + inner_1.join(" " + key + " ") + ")");
-                    }
-                    break;
-                default: {
-                    if (typeof value === "string") {
-                        var _param = param + "_" + key;
-                        res.strs.push(varName + "." + key + " = $" + _param);
-                        var jwt = context.getJWT();
-                        if (!jwt) {
-                            throw new Error("Unauthorized");
-                        }
-                        res.params[_param] = jwt[value];
-                    }
-                    var relationField_1 = node.relationFields.find(function (x) { return key === x.fieldName; });
-                    if (relationField_1) {
-                        var refNode_1 = context.neoSchema.nodes.find(function (x) { return x.name === relationField_1.typeMeta.name; });
-                        var inStr = relationField_1.direction === "IN" ? "<-" : "-";
-                        var outStr = relationField_1.direction === "OUT" ? "->" : "-";
-                        var relTypeStr = "[:" + relationField_1.type + "]";
-                        var relationVarName_1 = relationField_1.fieldName;
-                        var resultStr_1 = [
-                            "EXISTS((" + varName + ")" + inStr + relTypeStr + outStr + "(:" + relationField_1.typeMeta.name + "))",
-                            "AND " + (type === "bind" ? "ALL" : "ANY") + "(" + relationVarName_1 + " IN [(" + varName + ")" + inStr + relTypeStr + outStr + "(" + relationVarName_1 + ":" + relationField_1.typeMeta.name + ") | " + relationVarName_1 + "] WHERE ",
-                        ].join(" ");
-                        Object.entries(value).forEach(function (_a) {
-                            var _b, _c;
-                            var _d = __read(_a, 2), k = _d[0], v = _d[1];
-                            var recurse = createAuthAndParams({
-                                node: refNode_1,
-                                context: context,
-                                chainStr: param + "_" + key,
-                                varName: relationVarName_1,
-                                recurseArray: [(_b = {}, _b[type] = (_c = {}, _c[k] = v, _c), _b)],
-                                operation: operation,
-                                type: type,
-                            });
-                            resultStr_1 += recurse[0]
-                                .replace("CALL apoc.util.validate(NOT(", "")
-                                .replace("), \"Forbidden\", [0])", "");
-                            resultStr_1 += ")"; // close ALL
-                            res.params = __assign(__assign({}, res.params), recurse[1]);
-                            res.strs.push(resultStr_1);
-                        });
-                    }
-                }
-            }
-        });
         return res;
+    }, { params: {}, strs: [] });
+    return [result.strs.join(" AND "), result.params];
+}
+function createAuthAndParams(_a) {
+    var entity = _a.entity, operation = _a.operation, skipRoles = _a.skipRoles, skipIsAuthenticated = _a.skipIsAuthenticated, allow = _a.allow, context = _a.context, escapeQuotes = _a.escapeQuotes, bind = _a.bind;
+    if (!entity.auth) {
+        return ["", {}];
     }
-    var _c = (recurseArray || rules).reduce(function (res, value, i) { return reducer(res, value[type], i); }, {
-        strs: [],
-        params: {},
-    }), strs = _c.strs, params = _c.params;
-    var auth = strs.length ? "CALL apoc.util.validate(NOT(" + strs.join(" AND ") + "), \"Forbidden\", [0])" : "";
-    if (functionType) {
-        return [auth.replace(/CALL/g, "").replace(/apoc.util.validate/g, "apoc.util.validatePredicate"), params];
+    var authRules = [];
+    if (operation) {
+        authRules = entity === null || entity === void 0 ? void 0 : entity.auth.rules.filter(function (r) { var _a; return r.operations === "*" || ((_a = r.operations) === null || _a === void 0 ? void 0 : _a.includes(operation)); });
     }
-    return [auth, params];
+    else {
+        authRules = entity === null || entity === void 0 ? void 0 : entity.auth.rules;
+    }
+    function createSubPredicate(_a) {
+        var authRule = _a.authRule, index = _a.index, chainStr = _a.chainStr;
+        var thisPredicates = [];
+        var thisParams = {};
+        if (!skipRoles && authRule.roles) {
+            thisPredicates.push(createRolesStr({ roles: authRule.roles, escapeQuotes: escapeQuotes }));
+        }
+        if (!skipIsAuthenticated && (authRule.isAuthenticated === true || authRule.isAuthenticated === false)) {
+            thisPredicates.push("apoc.util.validatePredicate(NOT($auth.isAuthenticated = " + Boolean(authRule.isAuthenticated) + "), \"" + constants_1.AUTH_UNAUTHENTICATED_ERROR + "\", [0])");
+        }
+        if (allow && authRule.allow) {
+            var allowAndParams = createAuthPredicate({
+                context: context,
+                node: allow.parentNode,
+                varName: allow.varName,
+                rule: authRule,
+                chainStr: "" + (allow.chainStr || allow.varName) + (chainStr || "") + "_auth_allow" + index,
+                kind: "allow",
+            });
+            if (allowAndParams[0]) {
+                thisPredicates.push(allowAndParams[0]);
+                thisParams = __assign(__assign({}, thisParams), allowAndParams[1]);
+            }
+        }
+        ["AND", "OR"].forEach(function (key) {
+            var value = authRule[key];
+            if (!value) {
+                return;
+            }
+            var strs = [];
+            var _params = {};
+            value.forEach(function (v, i) {
+                var _a = __read(createSubPredicate({
+                    authRule: v,
+                    index: i,
+                    chainStr: chainStr ? "" + chainStr + key + i : "" + key + i,
+                }), 2), str = _a[0], par = _a[1];
+                if (!str) {
+                    return;
+                }
+                strs.push(str);
+                _params = __assign(__assign({}, _params), par);
+            });
+            thisPredicates.push(strs.join(" " + key + " "));
+            thisParams = __assign(__assign({}, thisParams), _params);
+        });
+        if (bind && authRule.bind) {
+            var allowAndParams = createAuthPredicate({
+                context: context,
+                node: bind.parentNode,
+                varName: bind.varName,
+                rule: authRule,
+                chainStr: "" + (bind.chainStr || bind.varName) + (chainStr || "") + "_auth_bind" + index,
+                kind: "bind",
+            });
+            if (allowAndParams[0]) {
+                thisPredicates.push(allowAndParams[0]);
+                thisParams = __assign(__assign({}, thisParams), allowAndParams[1]);
+            }
+        }
+        return [thisPredicates.join(" AND "), thisParams];
+    }
+    var subPredicates = authRules.reduce(function (res, authRule, index) {
+        var _a = __read(createSubPredicate({ authRule: authRule, index: index }), 2), str = _a[0], par = _a[1];
+        return {
+            strs: __spread(res.strs, [str]),
+            params: __assign(__assign({}, res.params), par),
+        };
+    }, { strs: [], params: {} });
+    return [subPredicates.strs.filter(Boolean).join(" OR "), subPredicates.params];
 }
 exports.default = createAuthAndParams;
 //# sourceMappingURL=create-auth-and-params.js.map

@@ -38,7 +38,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canEdit
                     }
                 }
@@ -69,7 +69,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canEdit).toEqual(true);
+                expect((response.data as any).posts[0].canEdit).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -92,7 +92,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canEdit
                     }
                 }
@@ -123,7 +123,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canEdit).toEqual(true);
+                expect((response.data as any).posts[0].canEdit).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -146,7 +146,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canEdit
                     }
                 }
@@ -176,7 +176,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canEdit).toEqual(true);
+                expect((response.data as any).posts[0].canEdit).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -203,7 +203,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canEdit
                     }
                 }
@@ -234,7 +234,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canEdit).toEqual(false);
+                expect((response.data as any).posts[0].canEdit).toEqual(false);
             } finally {
                 await session.close();
             }
@@ -259,7 +259,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canDelete
                     }
                 }
@@ -290,7 +290,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canDelete).toEqual(true);
+                expect((response.data as any).posts[0].canDelete).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -313,7 +313,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canDelete
                     }
                 }
@@ -344,7 +344,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canDelete).toEqual(true);
+                expect((response.data as any).posts[0].canDelete).toEqual(true);
             } finally {
                 await session.close();
             }
@@ -371,7 +371,7 @@ describe("post-custom", () => {
 
             const mutation = gql`
                 {
-                    Posts(where: {id: "${postId}"}){
+                    posts(where: {id: "${postId}"}){
                         canDelete
                     }
                 }
@@ -402,7 +402,7 @@ describe("post-custom", () => {
 
                 expect(response.errors).toEqual(undefined);
 
-                expect((response.data as any).Posts[0].canDelete).toEqual(
+                expect((response.data as any).posts[0].canDelete).toEqual(
                     false
                 );
             } finally {

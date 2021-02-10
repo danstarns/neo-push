@@ -1,6 +1,6 @@
 import { Context, Node } from "../classes";
 import { RelationField } from "../types";
-declare function createConnectAndParams({ withVars, value, varName, relationField, parentVar, refNode, context, labelOverride, parentNode, fromCreate, }: {
+declare function createConnectAndParams({ withVars, value, varName, relationField, parentVar, refNode, context, labelOverride, parentNode, fromCreate, insideDoWhen, }: {
     withVars: string[];
     value: any;
     varName: string;
@@ -11,5 +11,6 @@ declare function createConnectAndParams({ withVars, value, varName, relationFiel
     labelOverride?: string;
     parentNode: Node;
     fromCreate?: boolean;
+    insideDoWhen?: boolean;
 }): [string, any];
 export default createConnectAndParams;
