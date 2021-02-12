@@ -20,28 +20,28 @@ export const typeDefs = gql`
                 { operations: ["connect"], isAuthenticated: true }
                 {
                     operations: ["update"]
-                    allow: { id: "sub" }
-                    bind: { id: "sub" }
+                    allow: { id: "$jwt.sub" }
+                    bind: { id: "$jwt.sub" }
                 }
-                { operations: ["delete"], allow: { id: "sub" } }
+                { operations: ["delete"], allow: { id: "$jwt.sub" } }
                 {
                     operations: ["disconnect"]
                     allow: {
                         OR: [
-                            { id: "sub" }
+                            { id: "$jwt.sub" }
                             {
                                 createdBlogs: {
                                     OR: [
-                                        { creator: { id: "sub" } }
-                                        { authors: { id: "sub" } }
+                                        { creator: { id: "$jwt.sub" } }
+                                        { authors: { id: "$jwt.sub" } }
                                     ]
                                 }
                             }
                             {
                                 authorsBlogs: {
                                     OR: [
-                                        { creator: { id: "sub" } }
-                                        { authors: { id: "sub" } }
+                                        { creator: { id: "$jwt.sub" } }
+                                        { authors: { id: "$jwt.sub" } }
                                     ]
                                 }
                             }

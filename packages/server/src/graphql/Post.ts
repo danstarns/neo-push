@@ -43,17 +43,17 @@ export const typeDefs = gql`
     extend type Post
         @auth(
             rules: [
-                { operations: ["create"], bind: { author: { id: "sub" } } }
+                { operations: ["create"], bind: { author: { id: "$jwt.sub" } } }
                 {
                     operations: ["update"]
                     allow: {
                         OR: [
-                            { author: { id: "sub" } }
+                            { author: { id: "$jwt.sub" } }
                             {
                                 blog: {
                                     OR: [
-                                        { creator: { id: "sub" } }
-                                        { authors: { id: "sub" } }
+                                        { creator: { id: "$jwt.sub" } }
+                                        { authors: { id: "$jwt.sub" } }
                                     ]
                                 }
                             }
@@ -65,8 +65,8 @@ export const typeDefs = gql`
                     operations: ["delete", "disconnect"]
                     allow: {
                         OR: [
-                            { author: { id: "sub" } }
-                            { blog: { creator: { id: "sub" } } }
+                            { author: { id: "$jwt.sub" } }
+                            { blog: { creator: { id: "$jwt.sub" } } }
                         ]
                     }
                 }

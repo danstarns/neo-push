@@ -155,28 +155,28 @@ extend type User
             { operations: ["connect"], isAuthenticated: true }
             {
                 operations: ["update"]
-                allow: { id: "sub" }
-                bind: { id: "sub" }
+                allow: { id: "$jwt.sub" }
+                bind: { id: "$jwt.sub" }
             }
-            { operations: ["delete"], allow: { id: "sub" } }
+            { operations: ["delete"], allow: { id: "$jwt.sub" } }
             {
                 operations: ["disconnect"]
                 allow: {
                     OR: [
-                        { id: "sub" }
+                        { id: "$jwt.sub" }
                         {
                             createdBlogs: {
                                 OR: [
-                                    { creator: { id: "sub" } }
-                                    { authors: { id: "sub" } }
+                                    { creator: { id: "$jwt.sub" } }
+                                    { authors: { id: "$jwt.sub" } }
                                 ]
                             }
                         }
                         {
                             authorsBlogs: {
                                 OR: [
-                                    { creator: { id: "sub" } }
-                                    { authors: { id: "sub" } }
+                                    { creator: { id: "$jwt.sub" } }
+                                    { authors: { id: "$jwt.sub" } }
                                 ]
                             }
                         }
@@ -223,29 +223,32 @@ type Blog {
 extend type Blog
     @auth(
         rules: [
-            { operations: ["create"], bind: { creator: { id: "sub" } } }
+            { operations: ["create"], bind: { creator: { id: "$jwt.sub" } } }
             {
                 operations: ["update"]
-                allow: { creator: { id: "sub" } }
-                bind: { creator: { id: "sub" } }
+                allow: { creator: { id: "$jwt.sub" } }
+                bind: { creator: { id: "$jwt.sub" } }
             }
             {
                 operations: ["connect"]
                 allow: {
-                    OR: [{ creator: { id: "sub" } }, { authors: { id: "sub" } }]
+                    OR: [
+                        { creator: { id: "$jwt.sub" } }
+                        { authors: { id: "$jwt.sub" } }
+                    ]
                 }
             }
             {
                 operations: ["disconnect"]
                 allow: {
                     OR: [
-                        { creator: { id: "sub" } }
-                        { authors: { id: "sub" } }
-                        { posts: { author: { id: "sub" } } }
+                        { creator: { id: "$jwt.sub" } }
+                        { authors: { id: "$jwt.sub" } }
+                        { posts: { author: { id: "$jwt.sub" } } }
                     ]
                 }
             }
-            { operations: ["delete"], allow: { creator: { id: "sub" } } }
+            { operations: ["delete"], allow: { creator: { id: "$jwt.sub" } } }
         ]
     )
 ```
@@ -433,17 +436,17 @@ type Post {
 extend type Post
     @auth(
         rules: [
-            { operations: ["create"], bind: { author: { id: "sub" } } }
+            { operations: ["create"], bind: { author: { id: "$jwt.sub" } } }
             {
                 operations: ["update"]
                 allow: {
                     OR: [
-                        { author: { id: "sub" } }
+                        { author: { id: "$jwt.sub" } }
                         {
                             blog: {
                                 OR: [
-                                    { creator: { id: "sub" } }
-                                    { authors: { id: "sub" } }
+                                    { creator: { id: "$jwt.sub" } }
+                                    { authors: { id: "$jwt.sub" } }
                                 ]
                             }
                         }
@@ -455,8 +458,8 @@ extend type Post
                 operations: ["delete", "disconnect"]
                 allow: {
                     OR: [
-                        { author: { id: "sub" } }
-                        { blog: { creator: { id: "sub" } } }
+                        { author: { id: "$jwt.sub" } }
+                        { blog: { creator: { id: "$jwt.sub" } } }
                     ]
                 }
             }
@@ -562,22 +565,22 @@ type Comment {
 extend type Comment
     @auth(
         rules: [
-            { operations: ["create"], bind: { author: { id: "sub" } } }
+            { operations: ["create"], bind: { author: { id: "$jwt.sub" } } }
             {
                 operations: ["update", "connect"]
-                allow: { author: { id: "sub" } }
-                bind: { author: { id: "sub" } }
+                allow: { author: { id: "$jwt.sub" } }
+                bind: { author: { id: "$jwt.sub" } }
             }
             {
                 operations: ["delete", "disconnect"]
                 allow: {
                     OR: [
-                        { author: { id: "sub" } }
+                        { author: { id: "$jwt.sub" } }
                         {
                             post: {
                                 OR: [
-                                    { author: { id: "sub" } }
-                                    { blog: { creator: { id: "sub" } } }
+                                    { author: { id: "$jwt.sub" } }
+                                    { blog: { creator: { id: "$jwt.sub" } } }
                                 ]
                             }
                         }
