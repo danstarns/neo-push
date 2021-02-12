@@ -100,6 +100,7 @@ function createCreateAndParams(_a) {
                 operation: "create",
                 context: context,
                 bind: { parentNode: node, varName: varName, chainStr: _varName },
+                escapeQuotes: Boolean(insideDoWhen),
             });
             if (authAndParams[0]) {
                 if (!res.meta) {
@@ -137,13 +138,14 @@ function createCreateAndParams(_a) {
         creates: initial,
         params: {},
     }), creates = _b.creates, params = _b.params, meta = _b.meta;
-    var forbiddenString = "" + (insideDoWhen ? "\\\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\\\"" : "\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\"");
+    var forbiddenString = insideDoWhen ? "\\\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\\\"" : "\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\"";
     if (node.auth) {
         var bindAndParams = create_auth_and_params_1.default({
             entity: node,
             operation: "create",
             context: context,
             bind: { parentNode: node, varName: varName },
+            escapeQuotes: Boolean(insideDoWhen),
         });
         if (bindAndParams[0]) {
             creates.push("WITH " + withVars.join(", "));

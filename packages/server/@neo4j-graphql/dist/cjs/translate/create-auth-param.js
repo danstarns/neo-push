@@ -14,9 +14,9 @@ function createAuthParam(_a) {
     try {
         var jwt = context.getJWT();
         if (!jwt) {
-            throw new Error("no jwt");
+            return param;
         }
-        var dotPropKey = process.env.ROLES_OBJECT_PATH;
+        var dotPropKey = process.env.JWT_ROLES_OBJECT_PATH;
         if (dotPropKey) {
             param.roles = dot_prop_1.default.get(jwt, dotPropKey);
         }

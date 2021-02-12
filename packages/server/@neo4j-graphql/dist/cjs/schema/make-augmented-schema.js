@@ -438,6 +438,10 @@ function makeAugmentedSchema(options) {
                 return (__assign(__assign({}, res), (_a = {}, _a[f.fieldName] = f.typeMeta.input.pretty, _a)));
             }, {}),
         });
+        var nodeDeleteInput = composer.createInputTC({
+            name: node.name + "DeleteInput",
+            fields: {},
+        });
         ["Create", "Update"].map(function (operation) {
             var _a;
             return composer.createObjectTC({
@@ -470,8 +474,12 @@ function makeAugmentedSchema(options) {
             name: node.name + "DisconnectFieldInput",
             fields: __assign({ where: node.name + "Where" }, (node.relationFields.length ? { disconnect: nodeDisconnectInput } : {})),
         });
+        composer.createInputTC({
+            name: node.name + "DeleteFieldInput",
+            fields: __assign({ where: node.name + "Where" }, (node.relationFields.length ? { delete: nodeDeleteInput } : {})),
+        });
         node.relationFields.forEach(function (rel) {
-            var _a, _b, _c, _d, _e, _f, _g;
+            var _a, _b, _c, _d, _e, _f, _g, _h;
             if (rel.union) {
                 var refNodes = neoSchemaInput.nodes.filter(function (x) { var _a, _b; return (_b = (_a = rel.union) === null || _a === void 0 ? void 0 : _a.nodes) === null || _b === void 0 ? void 0 : _b.includes(x.name); });
                 composeNode.addFields((_a = {},
@@ -483,18 +491,22 @@ function makeAugmentedSchema(options) {
                     },
                     _a));
                 refNodes.forEach(function (n) {
-                    var _a, _b, _c, _d, _e, _f;
+                    var _a, _b, _c, _d, _e, _f, _g;
                     var concatFieldName = rel.fieldName + "_" + n.name;
                     var createField = rel.typeMeta.array ? "[" + n.name + "CreateInput]" : n.name + "CreateInput";
                     var updateField = n.name + "UpdateInput";
                     var nodeFieldInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + n.name + "FieldInput";
                     var nodeFieldUpdateInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + n.name + "UpdateFieldInput";
+                    var nodeFieldDeleteInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + n.name + "DeleteInput";
                     var connectField = rel.typeMeta.array
                         ? "[" + n.name + "ConnectFieldInput]"
                         : n.name + "ConnectFieldInput";
                     var disconnectField = rel.typeMeta.array
                         ? "[" + n.name + "DisconnectFieldInput]"
                         : n.name + "DisconnectFieldInput";
+                    var deleteField = rel.typeMeta.array
+                        ? "[" + n.name + "DeleteFieldInput]"
+                        : n.name + "DeleteFieldInput";
                     composeNode.addFieldArgs(rel.fieldName, (_a = {},
                         _a[n.name] = n.name + "Where",
                         _a));
@@ -506,6 +518,7 @@ function makeAugmentedSchema(options) {
                             connect: connectField,
                             disconnect: disconnectField,
                             create: createField,
+                            delete: deleteField,
                         },
                     });
                     composer.createInputTC({
@@ -514,6 +527,14 @@ function makeAugmentedSchema(options) {
                             create: createField,
                             connect: connectField,
                         },
+                    });
+                    composer.createInputTC({
+                        name: nodeFieldDeleteInputName,
+                        fields: __assign({ where: n.name + "Where" }, (n.relationFields.length
+                            ? {
+                                delete: n.name + "DeleteInput",
+                            }
+                            : {})),
                     });
                     nodeRelationInput.addFields((_b = {},
                         _b[concatFieldName] = createField,
@@ -526,12 +547,17 @@ function makeAugmentedSchema(options) {
                             ? "[" + nodeFieldUpdateInputName + "]"
                             : nodeFieldUpdateInputName,
                         _d));
-                    nodeConnectInput.addFields((_e = {},
-                        _e[concatFieldName] = connectField,
+                    nodeDeleteInput.addFields((_e = {},
+                        _e[concatFieldName] = rel.typeMeta.array
+                            ? "[" + nodeFieldDeleteInputName + "]"
+                            : nodeFieldDeleteInputName,
                         _e));
-                    nodeDisconnectInput.addFields((_f = {},
-                        _f[concatFieldName] = disconnectField,
+                    nodeConnectInput.addFields((_f = {},
+                        _f[concatFieldName] = connectField,
                         _f));
+                    nodeDisconnectInput.addFields((_g = {},
+                        _g[concatFieldName] = disconnectField,
+                        _g));
                 });
                 return;
             }
@@ -540,10 +566,12 @@ function makeAugmentedSchema(options) {
             var updateField = n.name + "UpdateInput";
             var nodeFieldInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + "FieldInput";
             var nodeFieldUpdateInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + "UpdateFieldInput";
+            var nodeFieldDeleteInputName = "" + node.name + utils_1.upperFirstLetter(rel.fieldName) + "DeleteInput";
             var connectField = rel.typeMeta.array ? "[" + n.name + "ConnectFieldInput]" : n.name + "ConnectFieldInput";
             var disconnectField = rel.typeMeta.array
                 ? "[" + n.name + "DisconnectFieldInput]"
                 : n.name + "DisconnectFieldInput";
+            var deleteField = rel.typeMeta.array ? "[" + n.name + "DeleteFieldInput]" : n.name + "DeleteFieldInput";
             [whereInput, andInput, orInput].forEach(function (inputType) {
                 var _a;
                 inputType.addFields((_a = {},
@@ -570,6 +598,7 @@ function makeAugmentedSchema(options) {
                     connect: connectField,
                     disconnect: disconnectField,
                     create: createField,
+                    delete: deleteField,
                 },
             });
             composer.createInputTC({
@@ -578,6 +607,14 @@ function makeAugmentedSchema(options) {
                     create: createField,
                     connect: connectField,
                 },
+            });
+            composer.createInputTC({
+                name: nodeFieldDeleteInputName,
+                fields: __assign({ where: n.name + "Where" }, (n.relationFields.length
+                    ? {
+                        delete: n.name + "DeleteInput",
+                    }
+                    : {})),
             });
             nodeRelationInput.addFields((_c = {},
                 _c[rel.fieldName] = createField,
@@ -588,12 +625,15 @@ function makeAugmentedSchema(options) {
             nodeUpdateInput.addFields((_e = {},
                 _e[rel.fieldName] = rel.typeMeta.array ? "[" + nodeFieldUpdateInputName + "]" : nodeFieldUpdateInputName,
                 _e));
-            nodeConnectInput.addFields((_f = {},
-                _f[rel.fieldName] = connectField,
+            nodeDeleteInput.addFields((_f = {},
+                _f[rel.fieldName] = rel.typeMeta.array ? "[" + nodeFieldDeleteInputName + "]" : nodeFieldDeleteInputName,
                 _f));
-            nodeDisconnectInput.addFields((_g = {},
-                _g[rel.fieldName] = disconnectField,
+            nodeConnectInput.addFields((_g = {},
+                _g[rel.fieldName] = connectField,
                 _g));
+            nodeDisconnectInput.addFields((_h = {},
+                _h[rel.fieldName] = disconnectField,
+                _h));
         });
         if (!((_f = node.exclude) === null || _f === void 0 ? void 0 : _f.operations.includes("read"))) {
             composer.Query.addFields((_b = {},

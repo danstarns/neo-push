@@ -37,7 +37,7 @@ declare class Node {
     auth?: Auth;
     description?: string;
     authableFields: (PrimitiveField | CustomScalarField | CustomEnumField | UnionField | ObjectField | DateTimeField | PointField | CypherField)[];
-    settableFields: (PrimitiveField | CustomScalarField | CustomEnumField | UnionField | ObjectField | DateTimeField | PointField)[];
+    mutableFields: (PrimitiveField | CustomScalarField | CustomEnumField | UnionField | ObjectField | DateTimeField | PointField)[];
     constructor(input: NodeConstructor);
 }
 export default Node;

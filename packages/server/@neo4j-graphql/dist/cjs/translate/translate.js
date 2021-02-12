@@ -47,6 +47,7 @@ var create_connect_and_params_1 = __importDefault(require("./create-connect-and-
 var create_disconnect_and_params_1 = __importDefault(require("./create-disconnect-and-params"));
 var create_auth_param_1 = __importDefault(require("./create-auth-param"));
 var constants_1 = require("../constants");
+var create_delete_and_params_1 = __importDefault(require("./create-delete-and-params"));
 function translateRead(_a) {
     var _b;
     var resolveTree = _a.resolveTree, node = _a.node, context = _a.context;
@@ -198,6 +199,9 @@ function translateUpdate(_a) {
     var connectInput = resolveTree.args.connect;
     var disconnectInput = resolveTree.args.disconnect;
     var createInput = resolveTree.args.create;
+    var deleteInput = resolveTree.args.delete;
+    var fieldsByTypeName = resolveTree.fieldsByTypeName["Update" + pluralize_1.default(node.name) + "MutationResponse"][pluralize_1.default(camelcase_1.default(node.name))]
+        .fieldsByTypeName;
     var varName = "this";
     var matchStr = "MATCH (" + varName + ":" + node.name + ")";
     var whereStr = "";
@@ -205,11 +209,10 @@ function translateUpdate(_a) {
     var connectStr = "";
     var disconnectStr = "";
     var createStr = "";
+    var deleteStr = "";
     var projAuth = "";
     var projStr = "";
     var cypherParams = {};
-    var fieldsByTypeName = resolveTree.fieldsByTypeName["Update" + pluralize_1.default(node.name) + "MutationResponse"][pluralize_1.default(camelcase_1.default(node.name))]
-        .fieldsByTypeName;
     if (whereInput) {
         var where = create_where_and_params_1.default({
             whereInput: whereInput,
@@ -291,6 +294,18 @@ function translateUpdate(_a) {
             });
         });
     }
+    if (deleteInput) {
+        var deleteAndParams = create_delete_and_params_1.default({
+            context: context,
+            node: node,
+            deleteInput: deleteInput,
+            varName: varName + "_delete",
+            parentVar: varName,
+            withVars: [varName],
+        });
+        deleteStr = deleteAndParams[0];
+        cypherParams = __assign(__assign({}, cypherParams), deleteAndParams[1]);
+    }
     var projection = create_projection_and_params_1.default({
         node: node,
         context: context,
@@ -308,7 +323,8 @@ function translateUpdate(_a) {
         updateStr,
         connectStr,
         disconnectStr,
-        createStr
+        createStr,
+        deleteStr
     ], (projAuth ? ["WITH " + varName, projAuth] : []), [
         "RETURN " + varName + " " + projStr + " AS " + varName,
     ]);
@@ -317,10 +333,13 @@ function translateUpdate(_a) {
 function translateDelete(_a) {
     var resolveTree = _a.resolveTree, node = _a.node, context = _a.context;
     var whereInput = resolveTree.args.where;
+    var deleteInput = resolveTree.args.delete;
     var varName = "this";
     var matchStr = "MATCH (" + varName + ":" + node.name + ")";
     var whereStr = "";
     var preAuthStr = "";
+    var deleteStr = "";
+    var authStr = "";
     var cypherParams = {};
     if (whereInput) {
         var where = create_where_and_params_1.default({
@@ -345,7 +364,19 @@ function translateDelete(_a) {
         cypherParams = __assign(__assign({}, cypherParams), preAuth[1]);
         preAuthStr = "WITH " + varName + "\nCALL apoc.util.validate(NOT(" + preAuth[0] + "), \"" + constants_1.AUTH_FORBIDDEN_ERROR + "\", [0])";
     }
-    var cypher = [matchStr, whereStr, preAuthStr, "DETACH DELETE " + varName];
+    if (deleteInput) {
+        var deleteAndParams = create_delete_and_params_1.default({
+            context: context,
+            node: node,
+            deleteInput: deleteInput,
+            varName: varName,
+            parentVar: varName,
+            withVars: [varName],
+        });
+        deleteStr = deleteAndParams[0];
+        cypherParams = __assign(__assign({}, cypherParams), deleteAndParams[1]);
+    }
+    var cypher = [matchStr, whereStr, deleteStr, preAuthStr, authStr, "DETACH DELETE " + varName];
     return [cypher.filter(Boolean).join("\n"), cypherParams];
 }
 function translate(_a) {

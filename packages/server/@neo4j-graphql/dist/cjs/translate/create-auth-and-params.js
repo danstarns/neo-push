@@ -54,7 +54,7 @@ function createAuthPredicate(_a) {
             var inner_1 = [];
             value.forEach(function (v, i) {
                 var _a;
-                var recurse = createAuthPredicate({
+                var authPredicate = createAuthPredicate({
                     rule: (_a = {}, _a[kind] = v, _a),
                     varName: varName,
                     node: node,
@@ -62,8 +62,8 @@ function createAuthPredicate(_a) {
                     context: context,
                     kind: kind,
                 });
-                inner_1.push(recurse[0]);
-                res.params = __assign(__assign({}, res.params), recurse[1]);
+                inner_1.push(authPredicate[0]);
+                res.params = __assign(__assign({}, res.params), authPredicate[1]);
             });
             res.strs.push("(" + inner_1.join(" " + key + " ") + ")");
         }
@@ -71,8 +71,11 @@ function createAuthPredicate(_a) {
         if (authableField) {
             var jwt = context.getJWTSafe();
             var _param = chainStr + "_" + key;
-            res.params[_param] = dot_prop_1.default.get({ value: jwt }, "value." + value);
-            res.strs.push(varName + "." + key + " = $" + _param);
+            var _c = __read(value.split("$jwt."), 2), propertyPath = _c[1];
+            if (propertyPath) {
+                res.params[_param] = dot_prop_1.default.get({ value: jwt }, "value." + propertyPath);
+                res.strs.push(varName + "." + key + " = $" + _param);
+            }
         }
         var relationField = node.relationFields.find(function (x) { return key === x.fieldName; });
         if (relationField) {
@@ -88,7 +91,7 @@ function createAuthPredicate(_a) {
             Object.entries(value).forEach(function (_a) {
                 var _b, _c;
                 var _d = __read(_a, 2), k = _d[0], v = _d[1];
-                var recurse = createAuthPredicate({
+                var authPredicate = createAuthPredicate({
                     node: refNode_1,
                     context: context,
                     chainStr: chainStr + "_" + key,
@@ -96,9 +99,9 @@ function createAuthPredicate(_a) {
                     rule: (_b = {}, _b[kind] = (_c = {}, _c[k] = v, _c), _b),
                     kind: kind,
                 });
-                resultStr_1 += recurse[0];
+                resultStr_1 += authPredicate[0];
                 resultStr_1 += ")"; // close ALL
-                res.params = __assign(__assign({}, res.params), recurse[1]);
+                res.params = __assign(__assign({}, res.params), authPredicate[1]);
                 res.strs.push(resultStr_1);
             });
         }
@@ -147,8 +150,8 @@ function createAuthAndParams(_a) {
             if (!value) {
                 return;
             }
-            var strs = [];
-            var _params = {};
+            var predicates = [];
+            var predicateParams = {};
             value.forEach(function (v, i) {
                 var _a = __read(createSubPredicate({
                     authRule: v,
@@ -158,11 +161,11 @@ function createAuthAndParams(_a) {
                 if (!str) {
                     return;
                 }
-                strs.push(str);
-                _params = __assign(__assign({}, _params), par);
+                predicates.push(str);
+                predicateParams = __assign(__assign({}, predicateParams), par);
             });
-            thisPredicates.push(strs.join(" " + key + " "));
-            thisParams = __assign(__assign({}, thisParams), _params);
+            thisPredicates.push(predicates.join(" " + key + " "));
+            thisParams = __assign(__assign({}, thisParams), predicateParams);
         });
         if (bind && authRule.bind) {
             var allowAndParams = createAuthPredicate({

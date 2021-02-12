@@ -7,6 +7,7 @@ declare function deleteResolver({ node, getSchema }: {
     type: string;
     resolve: (_root: any, _args: any, context: any, resolveInfo: GraphQLResolveInfo) => Promise<any>;
     args: {
+        delete?: string;
         where: string;
     };
 };

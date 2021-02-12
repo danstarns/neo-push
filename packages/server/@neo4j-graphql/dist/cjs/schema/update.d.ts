@@ -12,6 +12,7 @@ declare function update({ node, getSchema }: {
         connect: string;
         disconnect: string;
         create: string;
+        delete: string;
         where: string;
         update: string;
     } | {

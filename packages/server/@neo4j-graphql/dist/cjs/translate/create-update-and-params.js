@@ -38,9 +38,10 @@ var create_connect_and_params_1 = __importDefault(require("./create-connect-and-
 var create_disconnect_and_params_1 = __importDefault(require("./create-disconnect-and-params"));
 var create_where_and_params_1 = __importDefault(require("./create-where-and-params"));
 var create_create_and_params_1 = __importDefault(require("./create-create-and-params"));
-var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
-var create_auth_param_1 = __importDefault(require("./create-auth-param"));
 var constants_1 = require("../constants");
+var create_delete_and_params_1 = __importDefault(require("./create-delete-and-params"));
+var create_auth_param_1 = __importDefault(require("./create-auth-param"));
+var create_auth_and_params_1 = __importDefault(require("./create-auth-and-params"));
 function createUpdateAndParams(_a) {
     var updateInput = _a.updateInput, varName = _a.varName, node = _a.node, parentVar = _a.parentVar, chainStr = _a.chainStr, insideDoWhen = _a.insideDoWhen, withVars = _a.withVars, context = _a.context;
     var hasAppliedTimeStamps = false;
@@ -71,6 +72,7 @@ function createUpdateAndParams(_a) {
             var relTypeStr_1 = "[:" + relationField.type + "]";
             var updates = relationField.typeMeta.array ? value : [value];
             updates.forEach(function (update, index) {
+                var _a;
                 var _varName = varName + "_" + key + index;
                 if (update.update) {
                     if (withVars) {
@@ -147,6 +149,21 @@ function createUpdateAndParams(_a) {
                     res.strs.push(connectAndParams[0]);
                     res.params = __assign(__assign({}, res.params), connectAndParams[1]);
                 }
+                if (update.delete) {
+                    var innerVarName = _varName + "_delete";
+                    var deleteAndParams = create_delete_and_params_1.default({
+                        context: context,
+                        node: node,
+                        deleteInput: (_a = {}, _a[key] = update.delete, _a),
+                        varName: innerVarName,
+                        chainStr: innerVarName,
+                        parentVar: parentVar,
+                        withVars: withVars,
+                        insideDoWhen: insideDoWhen,
+                    });
+                    res.strs.push(deleteAndParams[0]);
+                    res.params = __assign(__assign({}, res.params), deleteAndParams[1]);
+                }
                 if (update.create) {
                     if (withVars) {
                         res.strs.push("WITH " + withVars.join(", "));
@@ -177,7 +194,7 @@ function createUpdateAndParams(_a) {
             });
             hasAppliedTimeStamps = true;
         }
-        var settableField = node.settableFields.find(function (x) { return x.fieldName === key; });
+        var settableField = node.mutableFields.find(function (x) { return x.fieldName === key; });
         var authableField = node.authableFields.find(function (x) { return x.fieldName === key; });
         if (settableField) {
             if (pointField) {
@@ -200,6 +217,7 @@ function createUpdateAndParams(_a) {
                     operation: "update",
                     context: context,
                     allow: { varName: varName, parentNode: node, chainStr: param },
+                    escapeQuotes: Boolean(insideDoWhen),
                 });
                 var postAuth_1 = create_auth_and_params_1.default({
                     entity: authableField,
@@ -208,6 +226,7 @@ function createUpdateAndParams(_a) {
                     skipIsAuthenticated: true,
                     context: context,
                     bind: { parentNode: node, varName: varName, chainStr: param },
+                    escapeQuotes: Boolean(insideDoWhen),
                 });
                 if (!res.meta) {
                     res.meta = { preAuthStrs: [], postAuthStrs: [] };
@@ -237,6 +256,7 @@ function createUpdateAndParams(_a) {
         context: context,
         allow: { parentNode: node, varName: varName },
         operation: "update",
+        escapeQuotes: Boolean(insideDoWhen),
     });
     if (preAuth[0]) {
         preAuthStrs.push(preAuth[0]);
@@ -249,6 +269,7 @@ function createUpdateAndParams(_a) {
         skipRoles: true,
         operation: "update",
         bind: { parentNode: node, varName: varName },
+        escapeQuotes: Boolean(insideDoWhen),
     });
     if (postAuth[0]) {
         postAuthStrs.push(postAuth[0]);
@@ -260,7 +281,7 @@ function createUpdateAndParams(_a) {
     }
     var preAuthStr = "";
     var postAuthStr = "";
-    var forbiddenString = "" + (insideDoWhen ? "\\\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\\\"" : "\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\"");
+    var forbiddenString = insideDoWhen ? "\\\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\\\"" : "\"" + constants_1.AUTH_FORBIDDEN_ERROR + "\"";
     if (preAuthStrs.length) {
         var apocStr = "CALL apoc.util.validate(NOT(" + preAuthStrs.join(" AND ") + "), " + forbiddenString + ", [0])";
         preAuthStr = withStr + "\n" + apocStr;

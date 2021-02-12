@@ -39,7 +39,7 @@ var Node = /** @class */ (function () {
         this.auth = input.auth;
         this.description = input.description;
         this.authableFields = __spread(input.primitiveFields, input.scalarFields, input.enumFields, input.unionFields, input.objectFields, input.dateTimeFields, input.pointFields, input.cypherFields);
-        this.settableFields = __spread(input.dateTimeFields, input.enumFields, input.objectFields, input.scalarFields, input.primitiveFields, input.interfaceFields, input.objectFields, input.unionFields, input.pointFields);
+        this.mutableFields = __spread(input.dateTimeFields, input.enumFields, input.objectFields, input.scalarFields, input.primitiveFields, input.interfaceFields, input.objectFields, input.unionFields, input.pointFields);
     }
     return Node;
 }());

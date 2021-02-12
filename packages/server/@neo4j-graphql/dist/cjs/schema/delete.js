@@ -101,7 +101,11 @@ function deleteResolver(_a) {
     return {
         type: "DeleteInfo!",
         resolve: resolve,
-        args: { where: node.name + "Where" },
+        args: __assign({ where: node.name + "Where" }, (node.relationFields.length
+            ? {
+                delete: node.name + "DeleteInput",
+            }
+            : {})),
     };
 }
 exports.default = deleteResolver;

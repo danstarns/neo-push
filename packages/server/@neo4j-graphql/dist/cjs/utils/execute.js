@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var classes_1 = require("../classes");
 var constants_1 = require("../constants");
 // https://stackoverflow.com/a/58632373/10687857
 var _a = process.env, npm_package_version = _a.npm_package_version, npm_package_name = _a.npm_package_name;
@@ -76,10 +77,10 @@ function execute(input) {
                 case 3:
                     error_1 = _a.sent();
                     if (error_1.message.includes("Caused by: java.lang.RuntimeException: " + constants_1.AUTH_FORBIDDEN_ERROR)) {
-                        throw new Error("Forbidden");
+                        throw new classes_1.Neo4jGraphQLForbiddenError("Forbidden");
                     }
                     if (error_1.message.includes("Caused by: java.lang.RuntimeException: " + constants_1.AUTH_UNAUTHENTICATED_ERROR)) {
-                        throw new Error("Unauthenticated");
+                        throw new classes_1.Neo4jGraphQLAuthenticationError("Unauthenticated");
                     }
                     throw error_1;
                 case 4: return [4 /*yield*/, session.close()];
