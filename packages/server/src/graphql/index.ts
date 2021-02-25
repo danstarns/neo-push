@@ -1,4 +1,4 @@
-import { makeAugmentedSchema, OGM } from "@neo4j/graphql";
+import { Neo4jGraphQL, OGM } from "@neo4j/graphql";
 import { ApolloServer } from "apollo-server-express";
 import { driver } from "../neo4j";
 import { Context } from "../types";
@@ -25,7 +25,7 @@ export const ogm = new OGM({
     debug: config.NODE_ENV === "development",
 });
 
-export const neoSchema = makeAugmentedSchema({
+export const neoSchema = new Neo4jGraphQL({
     typeDefs,
     resolvers,
     debug: config.NODE_ENV === "development",
